@@ -7,7 +7,7 @@ import { DmInboxPage } from './pages/DmInboxPage'
 const TABS = [
   { id: 'competition', label: 'Competencia', icon: TrendingUp },
   { id: 'personality', label: 'Personalidad', icon: UserCog },
-  { id: 'dms', label: 'DMs pendientes', icon: Inbox },
+  { id: 'dms', label: 'Mensajes pendientes', icon: Inbox },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
