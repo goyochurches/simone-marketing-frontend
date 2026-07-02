@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { AtSign, TrendingUp, UserCog, Inbox } from 'lucide-react'
+import { AtSign, TrendingUp, UserCog, MessageCircle, Send } from 'lucide-react'
 import { CompetitionPage } from './pages/CompetitionPage'
 import { PersonalityPage } from './pages/PersonalityPage'
-import { DmInboxPage } from './pages/DmInboxPage'
+import { CommentsPage } from './pages/CommentsPage'
+import { DmChatPage } from './pages/DmChatPage'
 
 const TABS = [
   { id: 'competition', label: 'Competencia', icon: TrendingUp },
   { id: 'personality', label: 'Personalidad', icon: UserCog },
-  { id: 'dms', label: 'Mensajes pendientes', icon: Inbox },
+  { id: 'comments', label: 'Comentarios', icon: MessageCircle },
+  { id: 'dms', label: 'DMs', icon: Send },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -48,7 +50,8 @@ function App() {
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         {tab === 'competition' && <CompetitionPage />}
         {tab === 'personality' && <PersonalityPage />}
-        {tab === 'dms' && <DmInboxPage />}
+        {tab === 'comments' && <CommentsPage />}
+        {tab === 'dms' && <DmChatPage />}
       </main>
     </div>
   )
