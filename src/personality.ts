@@ -1,5 +1,11 @@
 export type Formality = 'muy cercano' | 'cercano' | 'neutral' | 'formal'
 export type EmojiUsage = 'ninguno' | 'poco' | 'normal' | 'bastante'
+export type DefaultLanguage = 'es' | 'en'
+
+export const LANGUAGE_LABELS: Record<DefaultLanguage, string> = {
+  es: 'Español',
+  en: 'English',
+}
 
 export interface FewShotExample {
   id: string
@@ -11,7 +17,8 @@ export interface PersonalityConfig {
   description: string
   formality: Formality
   emojiUsage: EmojiUsage
-  language: string
+  /** Fallback only — the reply always mirrors the language the customer wrote in. */
+  defaultLanguage: DefaultLanguage
   signature: string
   neverSay: string
   examples: FewShotExample[]
@@ -22,7 +29,7 @@ export const defaultPersonality: PersonalityConfig = {
     'Cercana y calida, como si hablara un familiar del taller. Explico el porque de un precio en vez de solo darlo. Nunca suena como un bot de atencion al cliente.',
   formality: 'cercano',
   emojiUsage: 'poco',
-  language: 'Espanol (con toques en ingles si el cliente escribe en ingles)',
+  defaultLanguage: 'en',
   signature: '— Simone & Son',
   neverSay: 'Descuentos inventados, prometer fechas de entrega exactas, hablar mal de otras joyerias.',
   examples: [
@@ -42,7 +49,7 @@ export function buildSystemPrompt(p: PersonalityConfig): string {
     `Personalidad: ${p.description}`,
     `Formalidad: ${p.formality}.`,
     `Uso de emojis: ${p.emojiUsage}.`,
-    `Idioma: ${p.language}.`,
+    `IMPORTANTE sobre el idioma: responde SIEMPRE en el mismo idioma en el que el cliente escribió su mensaje (detítalo tú mismo del mensaje), sin importar en qué idioma esté esta instrucción. Solo si no puedes determinar el idioma del mensaje, usa ${LANGUAGE_LABELS[p.defaultLanguage]} por defecto.`,
     p.signature ? `Firma tus respuestas con: "${p.signature}".` : '',
     p.neverSay ? `Nunca hagas o digas esto: ${p.neverSay}.` : '',
   ].filter(Boolean)

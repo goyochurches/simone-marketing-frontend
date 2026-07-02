@@ -3,14 +3,17 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 import {
   defaultPersonality,
   buildSystemPrompt,
+  LANGUAGE_LABELS,
   type PersonalityConfig,
   type FewShotExample,
   type Formality,
   type EmojiUsage,
+  type DefaultLanguage,
 } from '../personality'
 
 const FORMALITY_OPTIONS: Formality[] = ['muy cercano', 'cercano', 'neutral', 'formal']
 const EMOJI_OPTIONS: EmojiUsage[] = ['ninguno', 'poco', 'normal', 'bastante']
+const LANGUAGE_OPTIONS: DefaultLanguage[] = ['en', 'es']
 
 export function PersonalityPage() {
   const [personality, setPersonality] = useLocalStorage<PersonalityConfig>('personality-config', defaultPersonality)
@@ -84,12 +87,19 @@ export function PersonalityPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Idioma">
-              <input
-                value={personality.language}
-                onChange={e => update('language', e.target.value)}
+            <Field label="Idioma por defecto">
+              <select
+                value={personality.defaultLanguage}
+                onChange={e => update('defaultLanguage', e.target.value as DefaultLanguage)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400"
-              />
+              >
+                {LANGUAGE_OPTIONS.map(l => (
+                  <option key={l} value={l}>{LANGUAGE_LABELS[l]}</option>
+                ))}
+              </select>
+              <span className="text-[11px] text-slate-400">
+                Solo se usa si no se puede detectar el idioma del mensaje — la IA siempre responde en el idioma del cliente.
+              </span>
             </Field>
             <Field label="Firma">
               <input

@@ -3,7 +3,7 @@ import { Sparkles, Copy, Check, Lock, CircleAlert, Loader2 } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { defaultPersonality, buildSystemPrompt, type PersonalityConfig } from '../personality'
 import { mockPendingDms } from '../dms'
-import { generateReply } from '../lib/anthropic'
+import { generateReply } from '../lib/groq'
 
 type DraftState = {
   text: string
@@ -83,18 +83,18 @@ export function DmInboxPage() {
       <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-4">
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            API key de Anthropic (solo para probar — no se guarda)
+            API key de Groq (solo para probar — no se guarda)
           </span>
           <input
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder="sk-ant-…"
+            placeholder="gsk_…"
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400"
           />
         </label>
         <p className="mt-1.5 text-[11px] text-slate-400">
-          Se usa solo en tu navegador para llamar a la API de Anthropic directamente; se pierde al recargar la página.
+          Se usa solo en tu navegador para llamar a la API de Groq directamente; se pierde al recargar la página.
         </p>
       </div>
 
