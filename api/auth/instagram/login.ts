@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { requireAuth } from '../../_lib/auth.js'
 
-export default function handler(_req: VercelRequest, res: VercelResponse) {
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  if (!requireAuth(req, res)) return
   const url = new URL('https://www.instagram.com/oauth/authorize')
   url.searchParams.set('client_id', process.env.IG_APP_ID!)
   url.searchParams.set('redirect_uri', process.env.IG_REDIRECT_URI!)

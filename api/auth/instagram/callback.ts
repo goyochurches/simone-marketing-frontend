@@ -1,8 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { exchangeCodeForShortLivedToken, exchangeForLongLivedToken, getMyIgUserId, setToken } from '../../_lib/instagram.js'
+import { isAuthenticated } from '../../_lib/auth.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const appUrl = process.env.APP_URL ?? '/'
+
+  if (!isAuthenticated(req)) {
+    res.redirect(`${appUrl}?ig_connected=0`)
+    return
+  }
+
   const code = req.query.code
   const error = req.query.error
 

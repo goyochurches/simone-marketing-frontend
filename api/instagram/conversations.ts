@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getValidToken, igGet, NotConnectedError } from '../_lib/instagram.js'
 import { getCachedConversations, setCachedConversations, setRecipientId } from '../_lib/cache.js'
+import { requireAuth } from '../_lib/auth.js'
 import type { PendingDm } from '../../src/dms'
 
 async function backfillConversations(token: string, igUserId: string): Promise<PendingDm[]> {
@@ -27,7 +28,8 @@ async function backfillConversations(token: string, igUserId: string): Promise<P
   return items
 }
 
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!requireAuth(req, res)) return
   try {
     const token = await getValidToken()
     let items = await getCachedConversations()

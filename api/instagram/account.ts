@@ -1,7 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getValidToken, igGet, NotConnectedError } from '../_lib/instagram.js'
+import { requireAuth } from '../_lib/auth.js'
 
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!requireAuth(req, res)) return
   try {
     const token = await getValidToken()
     const me = await igGet(`/${token.igUserId}`, token.accessToken, {

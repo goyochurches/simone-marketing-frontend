@@ -1,12 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getValidToken, igPost } from '../../../_lib/instagram.js'
 import { getRecipientId, removeCachedConversation } from '../../../_lib/cache.js'
+import { requireAuth } from '../../../_lib/auth.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).end()
     return
   }
+  if (!requireAuth(req, res)) return
 
   const id = req.query.id
   const { text } = (req.body ?? {}) as { text?: string }

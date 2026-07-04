@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap } from 'lucide-react'
+import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut } from 'lucide-react'
 import { CompetitionPage } from './pages/CompetitionPage'
 import { PersonalityPage } from './pages/PersonalityPage'
 import { CommentsPage } from './pages/CommentsPage'
 import { DmChatPage } from './pages/DmChatPage'
+import { LoginPage } from './pages/LoginPage'
 import { useInstagramStatus } from './hooks/useInstagramStatus'
+import { useAuthSession } from './hooks/useAuthSession'
 
 const TABS = [
   { id: 'competition', label: 'Competencia', icon: TrendingUp },
@@ -16,8 +18,21 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id']
 
 function App() {
+  const { data: session, loading, refetch } = useAuthSession()
+
+  if (loading) return null
+  if (!session?.authenticated) return <LoginPage onSuccess={refetch} />
+  return <Dashboard onLogout={refetch} />
+}
+
+function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<TabId>('competition')
   const { data: status } = useInstagramStatus()
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    onLogout()
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -46,7 +61,16 @@ function App() {
               )
             })}
           </nav>
-          <InstagramConnectionBadge connected={status?.connected ?? false} />
+          <div className="flex items-center gap-2">
+            <InstagramConnectionBadge connected={status?.connected ?? false} />
+            <button
+              onClick={handleLogout}
+              title="Cerrar sesión"
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:text-slate-700"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </header>
 

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getValidToken, igGet, colorForId, NotConnectedError } from '../_lib/instagram.js'
 import { getCachedComments, setCachedComments } from '../_lib/cache.js'
+import { requireAuth } from '../_lib/auth.js'
 import type { PendingComment } from '../../src/comments'
 
 async function backfillComments(token: string): Promise<PendingComment[]> {
@@ -26,7 +27,8 @@ async function backfillComments(token: string): Promise<PendingComment[]> {
   return items
 }
 
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!requireAuth(req, res)) return
   try {
     const token = await getValidToken()
     let items = await getCachedComments()
