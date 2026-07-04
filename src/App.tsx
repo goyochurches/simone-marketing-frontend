@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut } from 'lucide-react'
-import { CompetitionPage } from './pages/CompetitionPage'
-import { PersonalityPage } from './pages/PersonalityPage'
-import { CommentsPage } from './pages/CommentsPage'
-import { DmChatPage } from './pages/DmChatPage'
 import { LoginPage } from './pages/LoginPage'
 import { useInstagramStatus } from './hooks/useInstagramStatus'
 import { useAuthSession } from './hooks/useAuthSession'
+
+const CompetitionPage = lazy(() => import('./pages/CompetitionPage').then(m => ({ default: m.CompetitionPage })))
+const PersonalityPage = lazy(() => import('./pages/PersonalityPage').then(m => ({ default: m.PersonalityPage })))
+const CommentsPage = lazy(() => import('./pages/CommentsPage').then(m => ({ default: m.CommentsPage })))
+const DmChatPage = lazy(() => import('./pages/DmChatPage').then(m => ({ default: m.DmChatPage })))
 
 const TABS = [
   { id: 'competition', label: 'Competencia', icon: TrendingUp },
@@ -75,10 +76,12 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        {tab === 'competition' && <CompetitionPage />}
-        {tab === 'personality' && <PersonalityPage />}
-        {tab === 'comments' && <CommentsPage />}
-        {tab === 'dms' && <DmChatPage />}
+        <Suspense fallback={null}>
+          {tab === 'competition' && <CompetitionPage />}
+          {tab === 'personality' && <PersonalityPage />}
+          {tab === 'comments' && <CommentsPage />}
+          {tab === 'dms' && <DmChatPage />}
+        </Suspense>
       </main>
     </div>
   )
