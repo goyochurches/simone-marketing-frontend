@@ -20,6 +20,10 @@ export async function setToken(token: IgToken): Promise<void> {
   await kv().set(TOKEN_KEY, token)
 }
 
+export async function deleteToken(): Promise<void> {
+  await kv().del(TOKEN_KEY)
+}
+
 export async function getValidToken(): Promise<IgToken> {
   const token = await getToken()
   if (!token) throw new NotConnectedError('Instagram no está conectado')

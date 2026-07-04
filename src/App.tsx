@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut } from 'lucide-react'
+import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut, Unplug } from 'lucide-react'
 import { LoginPage } from './pages/LoginPage'
 import { useInstagramStatus } from './hooks/useInstagramStatus'
 import { useAuthSession } from './hooks/useAuthSession'
@@ -28,11 +28,16 @@ function App() {
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<TabId>('competition')
-  const { data: status } = useInstagramStatus()
+  const { data: status, refetch: refetchStatus } = useInstagramStatus()
 
   async function handleLogout() {
     await fetch('/api/auth/session', { method: 'DELETE' })
     onLogout()
+  }
+
+  async function handleDisconnectInstagram() {
+    await fetch('/api/instagram/status', { method: 'DELETE' })
+    refetchStatus()
   }
 
   return (
@@ -63,7 +68,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             })}
           </nav>
           <div className="flex items-center gap-2">
-            <InstagramConnectionBadge connected={status?.connected ?? false} />
+            <InstagramConnectionBadge connected={status?.connected ?? false} onDisconnect={handleDisconnectInstagram} />
             <button
               onClick={handleLogout}
               title="Cerrar sesión"
@@ -87,13 +92,22 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   )
 }
 
-function InstagramConnectionBadge({ connected }: { connected: boolean }) {
+function InstagramConnectionBadge({ connected, onDisconnect }: { connected: boolean; onDisconnect: () => void }) {
   if (connected) {
     return (
-      <span className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
-        <CircleDot className="h-3 w-3" />
-        Instagram conectado
-      </span>
+      <div className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+          <CircleDot className="h-3 w-3" />
+          Instagram conectado
+        </span>
+        <button
+          onClick={onDisconnect}
+          title="Desconectar Instagram"
+          className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:text-slate-700"
+        >
+          <Unplug className="h-3.5 w-3.5" />
+        </button>
+      </div>
     )
   }
 

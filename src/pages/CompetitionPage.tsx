@@ -18,7 +18,14 @@ export function CompetitionPage() {
 
   const accounts = staticAccounts.map(a =>
     a.isUs && live
-      ? { ...a, followers: live.followers, posts: live.posts ?? a.posts, followersPerPost: live.followersPerPost ?? a.followersPerPost }
+      ? {
+          ...a,
+          handle: live.handle,
+          name: live.name,
+          followers: live.followers,
+          posts: live.posts ?? a.posts,
+          followersPerPost: live.followersPerPost ?? a.followersPerPost,
+        }
       : a,
   )
 
@@ -37,7 +44,7 @@ export function CompetitionPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Competencia alrededor de Simone & Son</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Competencia alrededor de {us.name}</h1>
         <p className="mt-1 text-sm text-slate-500">
           Benchmark público de cuentas de joyería en Orange County/California. Última actualización: {lastUpdated}.
         </p>
