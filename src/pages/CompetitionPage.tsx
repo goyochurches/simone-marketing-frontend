@@ -1,19 +1,36 @@
-import { TrendingUp, Users, Image as ImageIcon, Lightbulb, ExternalLink, CircleAlert } from 'lucide-react'
+import { TrendingUp, Users, Image as ImageIcon, Lightbulb, ExternalLink, CircleAlert, CircleCheck } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { accounts, recommendations, lastUpdated, type CompetitorAccount } from '../data'
+import { accounts as staticAccounts, recommendations, lastUpdated, type CompetitorAccount } from '../data'
+import { useApi } from '../hooks/useApi'
 
 const fmt = (n: number) => n.toLocaleString('es-ES')
 
-const chartData = accounts
-  .filter(a => a.followersPerPost != null)
-  .map(a => ({
-    name: a.handle.replace('@', ''),
-    ratio: a.followersPerPost as number,
-    isUs: a.isUs,
-  }))
-  .sort((a, b) => b.ratio - a.ratio)
+interface LiveAccount {
+  handle: string
+  name: string
+  followers: number
+  posts: number | null
+  followersPerPost: number | null
+}
 
 export function CompetitionPage() {
+  const { data: live } = useApi<LiveAccount | null>('/api/instagram/account')
+
+  const accounts = staticAccounts.map(a =>
+    a.isUs && live
+      ? { ...a, followers: live.followers, posts: live.posts ?? a.posts, followersPerPost: live.followersPerPost ?? a.followersPerPost }
+      : a,
+  )
+
+  const chartData = accounts
+    .filter(a => a.followersPerPost != null)
+    .map(a => ({
+      name: a.handle.replace('@', ''),
+      ratio: a.followersPerPost as number,
+      isUs: a.isUs,
+    }))
+    .sort((a, b) => b.ratio - a.ratio)
+
   const us = accounts.find(a => a.isUs)!
   const best = [...accounts].filter(a => a.comparable && !a.isUs).sort((a, b) => b.followers - a.followers)[0]
 
@@ -27,13 +44,24 @@ export function CompetitionPage() {
       </div>
 
       {/* Data caveat */}
-      <div className="mb-8 flex items-start gap-2.5 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>
-          Instagram bloquea el scraping público, así que estos números son a nivel de perfil (seguidores, posts) sacados de
-          fuentes públicas — no hay alcance ni impresiones reales. Para eso hace falta conectar la cuenta vía la Graph API.
-        </p>
-      </div>
+      {live ? (
+        <div className="mb-8 flex items-start gap-2.5 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Tus propios números ({us.handle}) ya vienen en vivo desde Instagram. Los de la competencia siguen siendo de
+            fuentes públicas — Instagram bloquea el scraping y su API solo da acceso a la cuenta conectada.
+          </p>
+        </div>
+      ) : (
+        <div className="mb-8 flex items-start gap-2.5 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Instagram bloquea el scraping público, así que estos números son a nivel de perfil (seguidores, posts) sacados de
+            fuentes públicas — no hay alcance ni impresiones reales. Conecta tu cuenta (arriba a la derecha) para que al
+            menos tus propios números vengan en vivo.
+          </p>
+        </div>
+      )}
 
       {/* Hero stats */}
       <section className="mb-10 grid gap-4 sm:grid-cols-3">

@@ -1,32 +1,56 @@
 import { useState } from 'react'
-import { Sparkles, Copy, Check, Lock, CircleAlert, Loader2, Gem } from 'lucide-react'
+import { Sparkles, Copy, Check, Lock, Send, CircleAlert, Loader2, Gem } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useDraftReplies, type DraftState } from '../hooks/useDraftReplies'
+import { useApi, postJson } from '../hooks/useApi'
+import { useInstagramStatus } from '../hooks/useInstagramStatus'
 import { defaultPersonality, buildSystemPrompt, type PersonalityConfig } from '../personality'
-import { mockPendingComments } from '../comments'
+import type { PendingComment } from '../comments'
 
 export function CommentsPage() {
   const [personality] = useLocalStorage<PersonalityConfig>('personality-config', defaultPersonality)
   const [apiKey, setApiKey] = useState('')
+  const [sendingId, setSendingId] = useState<string | null>(null)
+  const [sendError, setSendError] = useState<{ id: string; message: string } | null>(null)
+
+  const { data: status } = useInstagramStatus()
+  const connected = status?.connected ?? false
+  const { data: comments, loading, refetch } = useApi<PendingComment[]>('/api/instagram/comments')
+  const pendingComments = comments ?? []
 
   const systemPrompt = buildSystemPrompt(personality)
   const { drafts, bulkRunning, generateOne, generateAll, editDraft } = useDraftReplies(systemPrompt)
 
-  const commentItems = mockPendingComments.map(c => ({
+  const commentItems = pendingComments.map(c => ({
     id: c.id,
     prompt: `[Publicación: "${c.post.productName}" — descripción: "${c.post.caption}"]\nComentario: ${c.comment}`,
   }))
+
+  async function sendReply(id: string, text: string) {
+    setSendingId(id)
+    setSendError(null)
+    try {
+      await postJson(`/api/instagram/comments/${id}/reply`, { text })
+      refetch()
+    } catch (e) {
+      setSendError({ id, message: (e as Error).message })
+    } finally {
+      setSendingId(null)
+    }
+  }
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Comentarios en publicaciones</h1>
-          <p className="mt-1 text-sm text-slate-500">{mockPendingComments.length} comentarios sin responder.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {loading ? 'Cargando…' : `${pendingComments.length} comentarios sin responder.`}
+          </p>
         </div>
         <button
           onClick={() => generateAll(apiKey, commentItems)}
-          disabled={!apiKey || bulkRunning}
+          disabled={!apiKey || bulkRunning || pendingComments.length === 0}
           className="flex items-center gap-2 rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {bulkRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -34,12 +58,14 @@ export function CommentsPage() {
         </button>
       </div>
 
-      <div className="mb-6">
-        <Caveat>
-          Estos comentarios son de ejemplo — todavía no está conectada la cuenta de Instagram (falta el setup de Meta que
-          dejamos pendiente), así que "Enviar a Instagram" queda deshabilitado hasta entonces.
-        </Caveat>
-      </div>
+      {!connected && (
+        <div className="mb-6">
+          <Caveat>
+            Todavía no está conectada la cuenta de Instagram — usa el botón "Conectar Instagram" arriba a la derecha.
+            Mientras tanto no hay comentarios reales que mostrar.
+          </Caveat>
+        </div>
+      )}
 
       {/* API key input */}
       <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-4">
@@ -61,7 +87,7 @@ export function CommentsPage() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {mockPendingComments.map(c => (
+        {pendingComments.map(c => (
           <div key={c.id} className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-4">
             <PostThumbnail productName={c.post.productName} color={c.post.color} />
             <div className="min-w-0 flex-1">
@@ -82,7 +108,15 @@ export function CommentsPage() {
 
               <p className="mb-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">{c.comment}</p>
 
-              <DraftEditor id={c.id} draft={drafts[c.id]} onEdit={editDraft} />
+              <DraftEditor
+                id={c.id}
+                draft={drafts[c.id]}
+                onEdit={editDraft}
+                connected={connected}
+                sending={sendingId === c.id}
+                sendErrorMessage={sendError?.id === c.id ? sendError.message : undefined}
+                onSend={text => sendReply(c.id, text)}
+              />
             </div>
           </div>
         ))}
@@ -96,7 +130,7 @@ function PostThumbnail({ productName, color }: { productName: string; color: str
     <div
       className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-xl text-white"
       style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
-      title={`Foto real pendiente de conectar — ${productName}`}
+      title={productName}
     >
       <Gem className="h-5 w-5 opacity-90" />
     </div>
@@ -117,8 +151,16 @@ function GenerateButton({ apiKey, draft, onClick }: { apiKey: string; draft: Dra
 }
 
 function DraftEditor({
-  id, draft, onEdit,
-}: { id: string; draft: DraftState | undefined; onEdit: (id: string, text: string) => void }) {
+  id, draft, onEdit, connected, sending, sendErrorMessage, onSend,
+}: {
+  id: string
+  draft: DraftState | undefined
+  onEdit: (id: string, text: string) => void
+  connected: boolean
+  sending: boolean
+  sendErrorMessage: string | undefined
+  onSend: (text: string) => void
+}) {
   const [copied, setCopied] = useState(false)
 
   function copy() {
@@ -143,6 +185,7 @@ function DraftEditor({
         placeholder={draft.status === 'loading' ? 'Generando…' : ''}
         className="w-full resize-none rounded-xl border border-violet-200 bg-violet-50/40 p-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400"
       />
+      {sendErrorMessage && <Caveat tone="error">No se pudo enviar: {sendErrorMessage}</Caveat>}
       <div className="flex justify-end gap-2">
         <button
           onClick={copy}
@@ -152,14 +195,25 @@ function DraftEditor({
           {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? 'Copiado' : 'Copiar'}
         </button>
-        <button
-          disabled
-          title="Falta conectar la cuenta de Instagram (setup de Meta pendiente)"
-          className="flex items-center gap-1.5 rounded-full bg-slate-200 px-3 py-1.5 text-xs font-medium text-slate-400"
-        >
-          <Lock className="h-3.5 w-3.5" />
-          Enviar a Instagram
-        </button>
+        {connected ? (
+          <button
+            onClick={() => onSend(draft.text)}
+            disabled={!draft.text || sending}
+            className="flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            Enviar a Instagram
+          </button>
+        ) : (
+          <button
+            disabled
+            title="Falta conectar la cuenta de Instagram"
+            className="flex items-center gap-1.5 rounded-full bg-slate-200 px-3 py-1.5 text-xs font-medium text-slate-400"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            Enviar a Instagram
+          </button>
+        )}
       </div>
     </div>
   )

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { AtSign, TrendingUp, UserCog, MessageCircle, Send } from 'lucide-react'
+import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap } from 'lucide-react'
 import { CompetitionPage } from './pages/CompetitionPage'
 import { PersonalityPage } from './pages/PersonalityPage'
 import { CommentsPage } from './pages/CommentsPage'
 import { DmChatPage } from './pages/DmChatPage'
+import { useInstagramStatus } from './hooks/useInstagramStatus'
 
 const TABS = [
   { id: 'competition', label: 'Competencia', icon: TrendingUp },
@@ -16,6 +17,7 @@ type TabId = (typeof TABS)[number]['id']
 
 function App() {
   const [tab, setTab] = useState<TabId>('competition')
+  const { data: status } = useInstagramStatus()
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -44,6 +46,7 @@ function App() {
               )
             })}
           </nav>
+          <InstagramConnectionBadge connected={status?.connected ?? false} />
         </div>
       </header>
 
@@ -54,6 +57,27 @@ function App() {
         {tab === 'dms' && <DmChatPage />}
       </main>
     </div>
+  )
+}
+
+function InstagramConnectionBadge({ connected }: { connected: boolean }) {
+  if (connected) {
+    return (
+      <span className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+        <CircleDot className="h-3 w-3" />
+        Instagram conectado
+      </span>
+    )
+  }
+
+  return (
+    <a
+      href="/api/auth/instagram/login"
+      className="flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700"
+    >
+      <PlugZap className="h-3.5 w-3.5" />
+      Conectar Instagram
+    </a>
   )
 }
 
