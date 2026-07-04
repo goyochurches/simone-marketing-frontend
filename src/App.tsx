@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut, Unplug } from 'lucide-react'
+import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut, Unplug, Image } from 'lucide-react'
 import { LoginPage } from './pages/LoginPage'
 import { useInstagramStatus } from './hooks/useInstagramStatus'
 import { useAuthSession } from './hooks/useAuthSession'
@@ -8,12 +8,14 @@ const CompetitionPage = lazy(() => import('./pages/CompetitionPage').then(m => (
 const PersonalityPage = lazy(() => import('./pages/PersonalityPage').then(m => ({ default: m.PersonalityPage })))
 const CommentsPage = lazy(() => import('./pages/CommentsPage').then(m => ({ default: m.CommentsPage })))
 const DmChatPage = lazy(() => import('./pages/DmChatPage').then(m => ({ default: m.DmChatPage })))
+const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage').then(m => ({ default: m.PhotoEditorPage })))
 
 const TABS = [
   { id: 'competition', label: 'Competencia', icon: TrendingUp },
   { id: 'personality', label: 'Personalidad', icon: UserCog },
   { id: 'comments', label: 'Comentarios', icon: MessageCircle },
   { id: 'dms', label: 'DMs', icon: Send },
+  { id: 'editor', label: 'Editor de fotos', icon: Image },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -86,6 +88,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           {tab === 'personality' && <PersonalityPage />}
           {tab === 'comments' && <CommentsPage />}
           {tab === 'dms' && <DmChatPage />}
+          {tab === 'editor' && <PhotoEditorPage />}
         </Suspense>
       </main>
     </div>
