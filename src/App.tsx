@@ -31,7 +31,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const { data: status } = useInstagramStatus()
 
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    await fetch('/api/auth/session', { method: 'DELETE' })
     onLogout()
   }
 

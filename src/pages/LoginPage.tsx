@@ -13,7 +13,7 @@ export function LoginPage({ onSuccess }: { onSuccess: () => void }) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ username, password }),
