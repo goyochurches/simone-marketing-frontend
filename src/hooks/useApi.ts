@@ -36,3 +36,11 @@ export async function postJson(path: string, body: unknown): Promise<void> {
     throw new Error(payload.error ?? `${path} → ${res.status}`)
   }
 }
+
+export async function deleteJson(path: string): Promise<void> {
+  const res = await fetch(path, { method: 'DELETE' })
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}))
+    throw new Error(payload.error ?? `${path} → ${res.status}`)
+  }
+}

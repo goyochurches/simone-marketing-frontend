@@ -19,7 +19,8 @@ function isValidSignature(rawBody: Buffer, signatureHeader: string | string[] | 
   return a.length === b.length && crypto.timingSafeEqual(a, b)
 }
 
-async function handleCommentChange(token: string, value: any) {
+async function handleCommentChange(token: string, igUsername: string, value: any) {
+  if (value?.from?.username === igUsername) return // our own comment, not one to review
   const mediaId = value?.media?.id
   const media = mediaId
     ? await igGet(`/${mediaId}`, token, { fields: 'caption,media_url,thumbnail_url' }).catch(() => null)
@@ -92,10 +93,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Process before responding — a serverless function isn't guaranteed to keep running once it sends its response.
   try {
-    const { accessToken } = await getValidToken()
+    const { accessToken, igUsername } = await getValidToken()
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
-        if (change.field === 'comments') await handleCommentChange(accessToken, change.value)
+        if (change.field === 'comments') await handleCommentChange(accessToken, igUsername, change.value)
       }
       for (const event of entry.messaging ?? []) {
         await handleMessagingEvent(accessToken, event)

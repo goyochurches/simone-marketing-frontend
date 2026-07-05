@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Sparkles, Copy, Check, Lock, Send, Loader2, EyeOff } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useDraftReplies } from '../hooks/useDraftReplies'
-import { useApi, postJson } from '../hooks/useApi'
+import { useApi, postJson, deleteJson } from '../hooks/useApi'
 import { useInstagramStatus } from '../hooks/useInstagramStatus'
 import { defaultPersonality, buildSystemPrompt, type PersonalityConfig } from '../personality'
 import type { PendingDm } from '../dms'
@@ -44,7 +44,7 @@ export function DmChatPage() {
     setSending(true)
     setSendError(null)
     try {
-      await postJson(`/api/instagram/conversations/${id}/reply`, { text })
+      await postJson(`/api/instagram/conversations/${id}`, { text })
       refetch()
     } catch (e) {
       setSendError((e as Error).message)
@@ -56,7 +56,7 @@ export function DmChatPage() {
   async function dismiss(id: string) {
     setDismissing(true)
     try {
-      await postJson(`/api/instagram/conversations/${id}/dismiss`, {})
+      await deleteJson(`/api/instagram/conversations/${id}`)
       setSelectedId(undefined)
       refetch()
     } finally {
@@ -136,9 +136,11 @@ export function DmChatPage() {
           connected={connected}
           sending={sending}
           sendError={sendError}
+          dismissing={dismissing}
           onGenerate={() => generateOne(apiKey, { id: selected.id, prompt: selected.message })}
           onEdit={text => editDraft(selected.id, text)}
           onSend={text => sendReply(selected.id, text)}
+          onDismiss={() => dismiss(selected.id)}
         />
       ) : (
         <div className="flex flex-1 items-center justify-center text-sm text-slate-400">Sin conversaciones</div>
@@ -148,7 +150,7 @@ export function DmChatPage() {
 }
 
 function ChatThread({
-  dm, apiKey, draft, connected, sending, sendError, onGenerate, onEdit, onSend,
+  dm, apiKey, draft, connected, sending, sendError, dismissing, onGenerate, onEdit, onSend, onDismiss,
 }: {
   dm: PendingDm
   apiKey: string
@@ -156,9 +158,11 @@ function ChatThread({
   connected: boolean
   sending: boolean
   sendError: string | null
+  dismissing: boolean
   onGenerate: () => void
   onEdit: (text: string) => void
   onSend: (text: string) => void
+  onDismiss: () => void
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -179,10 +183,18 @@ function ChatThread({
         >
           {initials(dm.from)}
         </div>
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-semibold text-slate-800">{dm.from}</p>
           <p className="text-[11px] text-slate-400">{dm.handle}</p>
         </div>
+        <button
+          onClick={onDismiss}
+          disabled={dismissing}
+          title="Ocultar de tu bandeja (no lo borra de Instagram)"
+          className="flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-40"
+        >
+          {dismissing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
       </div>
 
       {/* Messages */}

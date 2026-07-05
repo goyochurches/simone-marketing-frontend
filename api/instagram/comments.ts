@@ -4,12 +4,13 @@ import { getCachedComments, setCachedComments } from '../_lib/cache.js'
 import { requireAuth } from '../_lib/auth.js'
 import type { PendingComment } from '../../src/comments'
 
-async function backfillComments(token: string): Promise<PendingComment[]> {
+async function backfillComments(token: string, igUsername: string): Promise<PendingComment[]> {
   const media = await igGet('/me/media', token, { fields: 'id,caption,media_url,thumbnail_url', limit: '15' })
   const items: PendingComment[] = []
   for (const m of media.data ?? []) {
     const comments = await igGet(`/${m.id}/comments`, token, { fields: 'id,text,from,timestamp', limit: '10' })
     for (const c of comments.data ?? []) {
+      if (c.from?.username === igUsername) continue
       items.push({
         id: c.id,
         from: c.from?.username ?? 'Instagram',
@@ -34,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const token = await getValidToken()
     let items = await getCachedComments()
     if (items.length === 0) {
-      items = await backfillComments(token.accessToken)
+      items = await backfillComments(token.accessToken, token.igUsername)
       await setCachedComments(items)
     }
     res.status(200).json(items)

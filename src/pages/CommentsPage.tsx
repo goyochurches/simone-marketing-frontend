@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Sparkles, Copy, Check, Lock, Send, CircleAlert, Loader2, Gem, EyeOff } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useDraftReplies, type DraftState } from '../hooks/useDraftReplies'
-import { useApi, postJson } from '../hooks/useApi'
+import { useApi, postJson, deleteJson } from '../hooks/useApi'
 import { useInstagramStatus } from '../hooks/useInstagramStatus'
 import { defaultPersonality, buildSystemPrompt, type PersonalityConfig } from '../personality'
 import type { PendingComment } from '../comments'
@@ -31,7 +31,7 @@ export function CommentsPage() {
     setSendingId(id)
     setSendError(null)
     try {
-      await postJson(`/api/instagram/comments/${id}/reply`, { text })
+      await postJson(`/api/instagram/comments/${id}`, { text })
       refetch()
     } catch (e) {
       setSendError({ id, message: (e as Error).message })
@@ -43,7 +43,7 @@ export function CommentsPage() {
   async function dismiss(id: string) {
     setDismissingId(id)
     try {
-      await postJson(`/api/instagram/comments/${id}/dismiss`, {})
+      await deleteJson(`/api/instagram/comments/${id}`)
       refetch()
     } finally {
       setDismissingId(null)
@@ -119,7 +119,7 @@ export function CommentsPage() {
                   <button
                     onClick={() => dismiss(c.id)}
                     disabled={dismissingId === c.id}
-                    title="Ocultar de tu bandeja (no lo borra de Instagram)"
+                    title="Ocultar este comentario en Instagram — nadie más podrá verlo (reversible desde la app de Instagram)"
                     className="flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-40"
                   >
                     {dismissingId === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />}
