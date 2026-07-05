@@ -1,5 +1,8 @@
+import { useEffect, useRef } from 'react'
 import { Plus, Trash2, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { postJson } from '../hooks/useApi'
 import {
   defaultPersonality,
   buildSystemPrompt,
@@ -17,6 +20,21 @@ const LANGUAGE_OPTIONS: DefaultLanguage[] = ['en', 'es']
 
 export function PersonalityPage() {
   const [personality, setPersonality] = useLocalStorage<PersonalityConfig>('personality-config', defaultPersonality)
+  const isFirstRun = useRef(true)
+
+  // Mirror to the server (debounced) so automations like n8n can read the same personality via /api/personality.
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false
+      return
+    }
+    const timeout = setTimeout(() => {
+      postJson('/api/personality', personality)
+        .then(() => toast.success('Personalidad guardada', { description: 'También disponible para tus automatizaciones (n8n).' }))
+        .catch(e => toast.error('No se pudo guardar en el servidor', { description: (e as Error).message }))
+    }, 800)
+    return () => clearTimeout(timeout)
+  }, [personality])
 
   function update<K extends keyof PersonalityConfig>(key: K, value: PersonalityConfig[K]) {
     setPersonality(prev => ({ ...prev, [key]: value }))

@@ -1,28 +1,21 @@
 import { TrendingUp, Users, Image as ImageIcon, Lightbulb, ExternalLink, CircleAlert, CircleCheck } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { accounts as staticAccounts, recommendations, lastUpdated, type CompetitorAccount } from '../data'
-import { useApi } from '../hooks/useApi'
+import { useInstagramStatus } from '../hooks/useInstagramStatus'
 
 const fmt = (n: number) => n.toLocaleString('es-ES')
 
-interface LiveAccount {
-  handle: string
-  name: string
-  followers: number
-  posts: number | null
-  followersPerPost: number | null
-}
-
 export function CompetitionPage() {
-  const { data: live } = useApi<LiveAccount | null>('/api/instagram/account')
+  const { data: status } = useInstagramStatus()
+  const live = status?.connected && status.handle ? status : null
 
   const accounts = staticAccounts.map(a =>
     a.isUs && live
       ? {
           ...a,
-          handle: live.handle,
-          name: live.name,
-          followers: live.followers,
+          handle: live.handle!,
+          name: live.name ?? live.handle!,
+          followers: live.followers ?? a.followers,
           posts: live.posts ?? a.posts,
           followersPerPost: live.followersPerPost ?? a.followersPerPost,
         }

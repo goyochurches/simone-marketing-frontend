@@ -1,10 +1,21 @@
 import { kv } from './kv.js'
 import type { PendingComment } from '../../src/comments'
 import type { PendingDm, DmMessage } from '../../src/dms'
+import type { PersonalityConfig } from '../../src/personality'
 
 const COMMENTS_KEY = 'ig:cache:comments'
 const CONVERSATIONS_KEY = 'ig:cache:conversations'
 const RECIPIENTS_KEY = 'ig:cache:recipients'
+const PERSONALITY_KEY = 'ig:personality'
+
+/** Server-side copy of the "Tu personalidad" config, mirrored from the browser's localStorage so automations (n8n) can read the same system prompt. */
+export async function getPersonalityConfig(): Promise<PersonalityConfig | null> {
+  return (await kv().get<PersonalityConfig>(PERSONALITY_KEY)) ?? null
+}
+
+export async function setPersonalityConfig(config: PersonalityConfig): Promise<void> {
+  await kv().set(PERSONALITY_KEY, config)
+}
 
 export async function getCachedComments(): Promise<PendingComment[]> {
   return (await kv().get<PendingComment[]>(COMMENTS_KEY)) ?? []
