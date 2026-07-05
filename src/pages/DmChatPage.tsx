@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Sparkles, Copy, Check, Lock, Send, Loader2, EyeOff } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useDraftReplies } from '../hooks/useDraftReplies'
 import { useApi, postJson, deleteJson } from '../hooks/useApi'
 import { useInstagramStatus } from '../hooks/useInstagramStatus'
 import { defaultPersonality, buildSystemPrompt, type PersonalityConfig } from '../personality'
-import type { PendingDm } from '../dms'
+import type { PendingDm, DmMessage } from '../dms'
 
 function initials(name: string) {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -24,6 +24,8 @@ export function DmChatPage() {
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [dismissing, setDismissing] = useState(false)
+  const [threads, setThreads] = useState<Record<string, DmMessage[]>>({})
+  const [loadingThread, setLoadingThread] = useState(false)
 
   const { data: status } = useInstagramStatus()
   const connected = status?.connected ?? false
@@ -39,6 +41,25 @@ export function DmChatPage() {
 
   const selected = pendingDms.find(d => d.id === selectedId)
   const selectedDraft = selected ? drafts[selected.id] : undefined
+  const selectedMessages = (selected && threads[selected.id]) ?? selected?.messages ?? []
+
+  useEffect(() => {
+    if (!selected?.conversationId) return
+    let cancelled = false
+    setLoadingThread(true)
+    fetch(`/api/instagram/conversations/${selected.id}?conversationId=${encodeURIComponent(selected.conversationId)}`)
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`${res.status}`))))
+      .then((data: { messages: DmMessage[] }) => {
+        if (!cancelled) setThreads(prev => ({ ...prev, [selected.id]: data.messages }))
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoadingThread(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selected?.id, selected?.conversationId])
 
   async function sendReply(id: string, text: string) {
     setSending(true)
@@ -131,6 +152,8 @@ export function DmChatPage() {
         <ChatThread
           key={selected.id}
           dm={selected}
+          messages={selectedMessages}
+          loadingThread={loadingThread}
           apiKey={apiKey}
           draft={selectedDraft}
           connected={connected}
@@ -150,9 +173,11 @@ export function DmChatPage() {
 }
 
 function ChatThread({
-  dm, apiKey, draft, connected, sending, sendError, dismissing, onGenerate, onEdit, onSend, onDismiss,
+  dm, messages, loadingThread, apiKey, draft, connected, sending, sendError, dismissing, onGenerate, onEdit, onSend, onDismiss,
 }: {
   dm: PendingDm
+  messages: DmMessage[]
+  loadingThread: boolean
   apiKey: string
   draft: ReturnType<typeof useDraftReplies>['drafts'][string] | undefined
   connected: boolean
@@ -165,6 +190,11 @@ function ChatThread({
   onDismiss: () => void
 }) {
   const [copied, setCopied] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: 'end' })
+  }, [messages, draft?.status])
 
   function copy() {
     if (!draft?.text) return
@@ -199,8 +229,14 @@ function ChatThread({
 
       {/* Messages */}
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto bg-slate-50 p-4">
-        {dm.messages.length > 0 ? (
-          dm.messages.map(m => (
+        {loadingThread && (
+          <p className="flex items-center gap-1.5 text-xs text-slate-400">
+            <Loader2 className="h-3 w-3 animate-spin" /> Cargando historial…
+          </p>
+        )}
+
+        {messages.length > 0 ? (
+          messages.map(m => (
             <div
               key={m.id}
               className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ${
@@ -240,6 +276,7 @@ function ChatThread({
             {sendError && <p className="text-[11px] text-red-600">No se pudo enviar: {sendError}</p>}
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
 
       {/* Compose bar */}

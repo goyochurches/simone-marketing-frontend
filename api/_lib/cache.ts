@@ -45,7 +45,7 @@ export async function appendConversationMessage(
   const items = await getCachedConversations()
   const existing = items.find(i => i.id === preview.id)
   const messages = existing ? [...existing.messages, message] : [message]
-  const updated: PendingDm = { ...preview, messages }
+  const updated: PendingDm = { ...preview, conversationId: preview.conversationId ?? existing?.conversationId, messages }
   await setCachedConversations([updated, ...items.filter(i => i.id !== preview.id)])
 }
 

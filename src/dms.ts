@@ -11,5 +11,7 @@ export interface PendingDm {
   handle: string
   message: string
   receivedAt: string
+  /** Instagram's own thread id — used to load the full history on demand. Unknown until the next backfill for conversations that arrived only via webhook. */
+  conversationId?: string
   messages: DmMessage[]
 }

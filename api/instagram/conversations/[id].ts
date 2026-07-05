@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getValidToken, igPost } from '../../_lib/instagram.js'
+import { getValidToken, igGet, igPost, describeMessage } from '../../_lib/instagram.js'
 import { getRecipientId, removeCachedConversation } from '../../_lib/cache.js'
 import { requireAuth } from '../../_lib/auth.js'
+import type { DmMessage } from '../../../src/dms'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireAuth(req, res)) return
@@ -9,6 +10,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const id = req.query.id
   if (typeof id !== 'string') {
     res.status(400).json({ error: 'Falta el id de la conversación' })
+    return
+  }
+
+  if (req.method === 'GET') {
+    const conversationId = req.query.conversationId
+    if (typeof conversationId !== 'string') {
+      res.status(400).json({ error: 'Falta el id de la conversación de Instagram' })
+      return
+    }
+    try {
+      const token = await getValidToken()
+      const data = await igGet(`/${conversationId}/messages`, token.accessToken, {
+        fields: 'id,message,from,created_time,attachments,shares,story,reactions',
+        limit: '25',
+      })
+      // The API returns newest-first — reverse to chronological order for a chat thread.
+      const messages: DmMessage[] = [...(data.data ?? [])].reverse().map((m: any) => ({
+        id: m.id,
+        text: describeMessage(m),
+        fromMe: m.from?.username === token.igUsername,
+        timestamp: m.created_time,
+      }))
+      res.status(200).json({ messages })
+    } catch (e) {
+      console.error('GET /api/instagram/conversations/[id] failed', e)
+      res.status(500).json({ error: (e as Error).message })
+    }
     return
   }
 

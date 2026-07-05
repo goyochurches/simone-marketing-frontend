@@ -5,35 +5,36 @@ import { requireAuth } from '../_lib/auth.js'
 import type { PendingDm, DmMessage } from '../../src/dms'
 
 async function backfillConversations(token: string, igUserId: string, igUsername: string): Promise<PendingDm[]> {
+  // Only the last message per conversation here — asking for full history across every conversation
+  // at once gets rejected by the API ("reduce the amount of data"). Full threads load on demand.
   const convos = await igGet(`/${igUserId}/conversations`, token, {
     platform: 'instagram',
-    fields: 'participants,messages.limit(25){message,from,created_time,attachments,shares,story,reactions}',
+    fields: 'id,participants,messages.limit(1){message,from,created_time,attachments,shares,story,reactions}',
   })
 
   const items: PendingDm[] = []
   for (const c of convos.data ?? []) {
-    const rawMessages = c.messages?.data ?? []
-    const lastMsg = rawMessages[0]
+    const lastMsg = c.messages?.data?.[0]
     // Participant/message "from" ids here use a different id scheme than /me returns for the same account, so match by username instead.
     const other = c.participants?.data?.find((p: any) => p.username !== igUsername)
     if (!lastMsg || !other || lastMsg.from?.username === igUsername) continue
 
-    // The API returns newest-first — reverse to chronological order for a chat thread.
-    const messages: DmMessage[] = [...rawMessages].reverse().map((m: any) => ({
-      id: m.id,
-      text: describeMessage(m),
-      fromMe: m.from?.username === igUsername,
-      timestamp: m.created_time,
-    }))
+    const message: DmMessage = {
+      id: lastMsg.id,
+      text: describeMessage(lastMsg),
+      fromMe: false,
+      timestamp: lastMsg.created_time,
+    }
 
     await setRecipientId(other.id, other.id)
     items.push({
       id: other.id,
       from: other.username ?? other.id,
       handle: `@${other.username ?? other.id}`,
-      message: describeMessage(lastMsg),
+      message: message.text,
       receivedAt: lastMsg.created_time,
-      messages,
+      conversationId: c.id,
+      messages: [message],
     })
   }
   return items
