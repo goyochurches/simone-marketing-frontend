@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sparkles, Copy, Check, Lock, Send, CircleAlert, Loader2, Gem } from 'lucide-react'
+import { Sparkles, Copy, Check, Lock, Send, CircleAlert, Loader2, Gem, EyeOff } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useDraftReplies, type DraftState } from '../hooks/useDraftReplies'
 import { useApi, postJson } from '../hooks/useApi'
@@ -12,6 +12,7 @@ export function CommentsPage() {
   const [apiKey, setApiKey] = useState('')
   const [sendingId, setSendingId] = useState<string | null>(null)
   const [sendError, setSendError] = useState<{ id: string; message: string } | null>(null)
+  const [dismissingId, setDismissingId] = useState<string | null>(null)
 
   const { data: status } = useInstagramStatus()
   const connected = status?.connected ?? false
@@ -36,6 +37,16 @@ export function CommentsPage() {
       setSendError({ id, message: (e as Error).message })
     } finally {
       setSendingId(null)
+    }
+  }
+
+  async function dismiss(id: string) {
+    setDismissingId(id)
+    try {
+      await postJson(`/api/instagram/comments/${id}/dismiss`, {})
+      refetch()
+    } finally {
+      setDismissingId(null)
     }
   }
 
@@ -99,11 +110,21 @@ export function CommentsPage() {
                   <p className="text-sm font-semibold text-slate-800">{c.from} <span className="font-normal text-slate-400">{c.handle}</span></p>
                   <p className="text-[11px] text-slate-400">{new Date(c.receivedAt).toLocaleString('es-ES')}</p>
                 </div>
-                <GenerateButton
-                  apiKey={apiKey}
-                  draft={drafts[c.id]}
-                  onClick={() => generateOne(apiKey, { id: c.id, prompt: commentItems.find(i => i.id === c.id)!.prompt })}
-                />
+                <div className="flex shrink-0 items-center gap-2">
+                  <GenerateButton
+                    apiKey={apiKey}
+                    draft={drafts[c.id]}
+                    onClick={() => generateOne(apiKey, { id: c.id, prompt: commentItems.find(i => i.id === c.id)!.prompt })}
+                  />
+                  <button
+                    onClick={() => dismiss(c.id)}
+                    disabled={dismissingId === c.id}
+                    title="Ocultar de tu bandeja (no lo borra de Instagram)"
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-40"
+                  >
+                    {dismissingId === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
               </div>
 
               <p className="mb-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">{c.comment}</p>

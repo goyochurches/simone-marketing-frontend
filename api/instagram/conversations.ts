@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getValidToken, igGet, NotConnectedError } from '../_lib/instagram.js'
+import { getValidToken, igGet, describeMessage, NotConnectedError } from '../_lib/instagram.js'
 import { getCachedConversations, setCachedConversations, setRecipientId } from '../_lib/cache.js'
 import { requireAuth } from '../_lib/auth.js'
 import type { PendingDm } from '../../src/dms'
@@ -7,7 +7,7 @@ import type { PendingDm } from '../../src/dms'
 async function backfillConversations(token: string, igUserId: string, igUsername: string): Promise<PendingDm[]> {
   const convos = await igGet(`/${igUserId}/conversations`, token, {
     platform: 'instagram',
-    fields: 'participants,messages.limit(1){message,from,created_time}',
+    fields: 'participants,messages.limit(1){message,from,created_time,attachments,shares,story,reactions}',
   })
 
   const items: PendingDm[] = []
@@ -22,7 +22,7 @@ async function backfillConversations(token: string, igUserId: string, igUsername
       id: other.id,
       from: other.username ?? other.id,
       handle: `@${other.username ?? other.id}`,
-      message: lastMsg.message ?? '',
+      message: describeMessage(lastMsg),
       receivedAt: lastMsg.created_time,
     })
   }

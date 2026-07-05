@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import crypto from 'node:crypto'
-import { getValidToken, igGet, colorForId, NotConnectedError } from '../_lib/instagram.js'
+import { getValidToken, igGet, colorForId, describeMessage, NotConnectedError } from '../_lib/instagram.js'
 import { upsertCachedComment, upsertCachedConversation, setRecipientId } from '../_lib/cache.js'
 
 export const config = { api: { bodyParser: false } }
@@ -43,8 +43,7 @@ async function handleCommentChange(token: string, value: any) {
 async function handleMessagingEvent(token: string, event: any) {
   if (event?.message?.is_echo) return // messages we sent ourselves, not incoming ones
   const senderId = event?.sender?.id
-  const text = event?.message?.text
-  if (!senderId || !text) return
+  if (!senderId || !event?.message) return
 
   const profile = await igGet(`/${senderId}`, token, { fields: 'name,username' }).catch(() => null)
   const username = profile?.username ?? senderId
@@ -54,7 +53,7 @@ async function handleMessagingEvent(token: string, event: any) {
     id: senderId,
     from: profile?.name ?? username,
     handle: `@${username}`,
-    message: text,
+    message: describeMessage(event.message),
     receivedAt: new Date((event.timestamp ?? Date.now()) as number).toISOString(),
   })
 }

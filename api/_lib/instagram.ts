@@ -84,6 +84,29 @@ export async function igPost(path: string, token: string, params: Record<string,
   return res.json()
 }
 
+/** Instagram only returns plain text in `message`/`text` — shares, story replies, media and reactions come back empty, so build a readable fallback. */
+export function describeMessage(m: any): string {
+  const text = m?.message || m?.text
+  if (text) return text
+
+  const shareLink = m?.shares?.data?.[0]?.link
+  if (shareLink) return `🔗 Compartió: ${shareLink}`
+
+  if (m?.story?.reply_to) return '↩️ Respondió a tu historia'
+
+  const attachment = m?.attachments?.data?.[0] ?? (Array.isArray(m?.attachments) ? m.attachments[0] : undefined)
+  if (attachment) {
+    if (attachment.video_data || attachment.type === 'video') return '🎥 Envió un video'
+    if (attachment.image_data || attachment.type === 'image') return '📷 Envió una foto'
+    if (attachment.type === 'audio') return '🎤 Envió una nota de voz'
+    return '📎 Envió un adjunto'
+  }
+
+  if (m?.reactions?.data?.length > 0) return '❤️ Reaccionó a un mensaje'
+
+  return '[Mensaje sin texto]'
+}
+
 export function colorForId(id: string): string {
   const palette = ['#7c3aed', '#0f766e', '#b45309', '#be123c']
   const n = [...id].reduce((s, c) => s + c.charCodeAt(0), 0)

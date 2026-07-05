@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Sparkles, Copy, Check, Lock, Send, Loader2 } from 'lucide-react'
+import { Sparkles, Copy, Check, Lock, Send, Loader2, EyeOff } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useDraftReplies } from '../hooks/useDraftReplies'
 import { useApi, postJson } from '../hooks/useApi'
@@ -23,6 +23,7 @@ export function DmChatPage() {
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [dismissing, setDismissing] = useState(false)
 
   const { data: status } = useInstagramStatus()
   const connected = status?.connected ?? false
@@ -49,6 +50,17 @@ export function DmChatPage() {
       setSendError((e as Error).message)
     } finally {
       setSending(false)
+    }
+  }
+
+  async function dismiss(id: string) {
+    setDismissing(true)
+    try {
+      await postJson(`/api/instagram/conversations/${id}/dismiss`, {})
+      setSelectedId(undefined)
+      refetch()
+    } finally {
+      setDismissing(false)
     }
   }
 
