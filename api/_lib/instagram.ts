@@ -7,6 +7,7 @@ const TOKEN_KEY = 'ig:token'
 export interface IgToken {
   accessToken: string
   igUserId: string
+  igUsername: string
   expiresAt: number
 }
 
@@ -62,9 +63,8 @@ export async function refreshLongLivedToken(token: string) {
   return res.json() as Promise<{ access_token: string; expires_in: number }>
 }
 
-export async function getMyIgUserId(token: string): Promise<string> {
-  const me = await igGet('/me', token, { fields: 'id' })
-  return me.id
+export async function getMyProfile(token: string): Promise<{ id: string; username: string }> {
+  return igGet('/me', token, { fields: 'id,username' })
 }
 
 export async function igGet(path: string, token: string, params: Record<string, string> = {}): Promise<any> {

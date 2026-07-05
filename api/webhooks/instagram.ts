@@ -38,6 +38,7 @@ async function handleCommentChange(token: string, value: any) {
 }
 
 async function handleMessagingEvent(token: string, event: any) {
+  if (event?.message?.is_echo) return // messages we sent ourselves, not incoming ones
   const senderId = event?.sender?.id
   const text = event?.message?.text
   if (!senderId || !text) return

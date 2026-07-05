@@ -4,7 +4,7 @@ import { getCachedConversations, setCachedConversations, setRecipientId } from '
 import { requireAuth } from '../_lib/auth.js'
 import type { PendingDm } from '../../src/dms'
 
-async function backfillConversations(token: string, igUserId: string): Promise<PendingDm[]> {
+async function backfillConversations(token: string, igUserId: string, igUsername: string): Promise<PendingDm[]> {
   const convos = await igGet(`/${igUserId}/conversations`, token, {
     platform: 'instagram',
     fields: 'participants,messages.limit(1){message,from,created_time}',
@@ -13,8 +13,9 @@ async function backfillConversations(token: string, igUserId: string): Promise<P
   const items: PendingDm[] = []
   for (const c of convos.data ?? []) {
     const lastMsg = c.messages?.data?.[0]
-    const other = c.participants?.data?.find((p: any) => p.id !== igUserId)
-    if (!lastMsg || !other || lastMsg.from?.id === igUserId) continue
+    // Participant/message "from" ids here use a different id scheme than /me returns for the same account, so match by username instead.
+    const other = c.participants?.data?.find((p: any) => p.username !== igUsername)
+    if (!lastMsg || !other || lastMsg.from?.username === igUsername) continue
 
     await setRecipientId(other.id, other.id)
     items.push({
@@ -34,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const token = await getValidToken()
     let items = await getCachedConversations()
     if (items.length === 0) {
-      items = await backfillConversations(token.accessToken, token.igUserId)
+      items = await backfillConversations(token.accessToken, token.igUserId, token.igUsername)
       await setCachedConversations(items)
     }
     res.status(200).json(items)

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { exchangeCodeForShortLivedToken, exchangeForLongLivedToken, getMyIgUserId, setToken } from '../../_lib/instagram.js'
+import { exchangeCodeForShortLivedToken, exchangeForLongLivedToken, getMyProfile, setToken } from '../../_lib/instagram.js'
 import { isAuthenticated } from '../../_lib/auth.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -21,10 +21,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const short = await exchangeCodeForShortLivedToken(code)
     const long = await exchangeForLongLivedToken(short.access_token)
-    const igUserId = await getMyIgUserId(long.access_token)
+    const profile = await getMyProfile(long.access_token)
     await setToken({
       accessToken: long.access_token,
-      igUserId,
+      igUserId: profile.id,
+      igUsername: profile.username,
       expiresAt: Date.now() + long.expires_in * 1000,
     })
     res.redirect(`${appUrl}?ig_connected=1`)

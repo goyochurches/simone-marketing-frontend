@@ -8,12 +8,12 @@ async function backfillComments(token: string): Promise<PendingComment[]> {
   const media = await igGet('/me/media', token, { fields: 'id,caption', limit: '15' })
   const items: PendingComment[] = []
   for (const m of media.data ?? []) {
-    const comments = await igGet(`/${m.id}/comments`, token, { fields: 'id,text,username,timestamp', limit: '10' })
+    const comments = await igGet(`/${m.id}/comments`, token, { fields: 'id,text,from,timestamp', limit: '10' })
     for (const c of comments.data ?? []) {
       items.push({
         id: c.id,
-        from: c.username,
-        handle: `@${c.username}`,
+        from: c.from?.username ?? 'Instagram',
+        handle: `@${c.from?.username ?? ''}`,
         comment: c.text,
         receivedAt: c.timestamp,
         post: {
