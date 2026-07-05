@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sparkles, Copy, Check, Lock, Send, CircleAlert, Loader2, Gem, EyeOff } from 'lucide-react'
+import { toast } from 'sonner'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useDraftReplies, type DraftState } from '../hooks/useDraftReplies'
 import { useApi, postJson, deleteJson } from '../hooks/useApi'
@@ -11,7 +12,6 @@ export function CommentsPage() {
   const [personality] = useLocalStorage<PersonalityConfig>('personality-config', defaultPersonality)
   const [apiKey, setApiKey] = useState('')
   const [sendingId, setSendingId] = useState<string | null>(null)
-  const [sendError, setSendError] = useState<{ id: string; message: string } | null>(null)
   const [dismissingId, setDismissingId] = useState<string | null>(null)
 
   const { data: status } = useInstagramStatus()
@@ -29,12 +29,12 @@ export function CommentsPage() {
 
   async function sendReply(id: string, text: string) {
     setSendingId(id)
-    setSendError(null)
     try {
       await postJson(`/api/instagram/comments/${id}`, { text })
+      toast.success('Respuesta enviada')
       refetch()
     } catch (e) {
-      setSendError({ id, message: (e as Error).message })
+      toast.error('No se pudo enviar la respuesta', { description: (e as Error).message })
     } finally {
       setSendingId(null)
     }
@@ -44,7 +44,10 @@ export function CommentsPage() {
     setDismissingId(id)
     try {
       await deleteJson(`/api/instagram/comments/${id}`)
+      toast.success('Comentario ocultado en Instagram')
       refetch()
+    } catch (e) {
+      toast.error('No se pudo ocultar', { description: (e as Error).message })
     } finally {
       setDismissingId(null)
     }
@@ -135,7 +138,6 @@ export function CommentsPage() {
                 onEdit={editDraft}
                 connected={connected}
                 sending={sendingId === c.id}
-                sendErrorMessage={sendError?.id === c.id ? sendError.message : undefined}
                 onSend={text => sendReply(c.id, text)}
               />
             </div>
@@ -182,14 +184,13 @@ function GenerateButton({ apiKey, draft, onClick }: { apiKey: string; draft: Dra
 }
 
 function DraftEditor({
-  id, draft, onEdit, connected, sending, sendErrorMessage, onSend,
+  id, draft, onEdit, connected, sending, onSend,
 }: {
   id: string
   draft: DraftState | undefined
   onEdit: (id: string, text: string) => void
   connected: boolean
   sending: boolean
-  sendErrorMessage: string | undefined
   onSend: (text: string) => void
 }) {
   const [copied, setCopied] = useState(false)
@@ -216,7 +217,6 @@ function DraftEditor({
         placeholder={draft.status === 'loading' ? 'Generando…' : ''}
         className="w-full resize-none rounded-xl border border-violet-200 bg-violet-50/40 p-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400"
       />
-      {sendErrorMessage && <Caveat tone="error">No se pudo enviar: {sendErrorMessage}</Caveat>}
       <div className="flex justify-end gap-2">
         <button
           onClick={copy}

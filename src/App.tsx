@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut, Unplug, Image, BarChart3 } from 'lucide-react'
+import { Toaster } from 'sonner'
 import { LoginPage } from './pages/LoginPage'
 import { useInstagramStatus } from './hooks/useInstagramStatus'
 import { useAuthSession } from './hooks/useAuthSession'
@@ -46,6 +47,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <Toaster position="bottom-right" richColors closeButton />
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2 text-violet-600">

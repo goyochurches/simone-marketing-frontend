@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Sparkles, Copy, Check, Lock, Send, Loader2, EyeOff } from 'lucide-react'
+import { toast } from 'sonner'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useDraftReplies } from '../hooks/useDraftReplies'
 import { useApi, postJson, deleteJson } from '../hooks/useApi'
@@ -22,7 +23,6 @@ export function DmChatPage() {
   const [apiKey, setApiKey] = useState('')
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const [sending, setSending] = useState(false)
-  const [sendError, setSendError] = useState<string | null>(null)
   const [dismissing, setDismissing] = useState(false)
   const [threads, setThreads] = useState<Record<string, DmMessage[]>>({})
   const [loadingThread, setLoadingThread] = useState(false)
@@ -63,12 +63,19 @@ export function DmChatPage() {
 
   async function sendReply(id: string, text: string) {
     setSending(true)
-    setSendError(null)
     try {
       await postJson(`/api/instagram/conversations/${id}`, { text })
+      toast.success('Mensaje enviado')
       refetch()
     } catch (e) {
-      setSendError((e as Error).message)
+      const message = (e as Error).message
+      if (message.includes('invitation to chat is accepted')) {
+        toast.error('No se pudo enviar', {
+          description: 'Esta persona tiene una solicitud de chat pendiente — solo puedes enviarle otro mensaje cuando la acepte.',
+        })
+      } else {
+        toast.error('No se pudo enviar el mensaje', { description: message })
+      }
     } finally {
       setSending(false)
     }
@@ -78,8 +85,11 @@ export function DmChatPage() {
     setDismissing(true)
     try {
       await deleteJson(`/api/instagram/conversations/${id}`)
+      toast.success('Ocultado de tu bandeja')
       setSelectedId(undefined)
       refetch()
+    } catch (e) {
+      toast.error('No se pudo ocultar', { description: (e as Error).message })
     } finally {
       setDismissing(false)
     }
@@ -158,7 +168,6 @@ export function DmChatPage() {
           draft={selectedDraft}
           connected={connected}
           sending={sending}
-          sendError={sendError}
           dismissing={dismissing}
           onGenerate={() => generateOne(apiKey, { id: selected.id, prompt: selected.message })}
           onEdit={text => editDraft(selected.id, text)}
@@ -173,7 +182,7 @@ export function DmChatPage() {
 }
 
 function ChatThread({
-  dm, messages, loadingThread, apiKey, draft, connected, sending, sendError, dismissing, onGenerate, onEdit, onSend, onDismiss,
+  dm, messages, loadingThread, apiKey, draft, connected, sending, dismissing, onGenerate, onEdit, onSend, onDismiss,
 }: {
   dm: PendingDm
   messages: DmMessage[]
@@ -182,7 +191,6 @@ function ChatThread({
   draft: ReturnType<typeof useDraftReplies>['drafts'][string] | undefined
   connected: boolean
   sending: boolean
-  sendError: string | null
   dismissing: boolean
   onGenerate: () => void
   onEdit: (text: string) => void
@@ -273,7 +281,6 @@ function ChatThread({
               placeholder={draft.status === 'loading' ? 'Generando…' : ''}
               className="w-full resize-none rounded-2xl rounded-br-sm border border-violet-200 bg-violet-600/95 px-3.5 py-2.5 text-sm text-white placeholder:text-violet-200 focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
-            {sendError && <p className="text-[11px] text-red-600">No se pudo enviar: {sendError}</p>}
           </div>
         )}
         <div ref={bottomRef} />
