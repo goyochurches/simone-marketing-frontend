@@ -8,5 +8,6 @@ export interface PendingComment {
     productName: string
     caption: string
     color: string
+    mediaUrl?: string
   }
 }

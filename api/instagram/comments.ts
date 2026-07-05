@@ -5,7 +5,7 @@ import { requireAuth } from '../_lib/auth.js'
 import type { PendingComment } from '../../src/comments'
 
 async function backfillComments(token: string): Promise<PendingComment[]> {
-  const media = await igGet('/me/media', token, { fields: 'id,caption', limit: '15' })
+  const media = await igGet('/me/media', token, { fields: 'id,caption,media_url,thumbnail_url', limit: '15' })
   const items: PendingComment[] = []
   for (const m of media.data ?? []) {
     const comments = await igGet(`/${m.id}/comments`, token, { fields: 'id,text,from,timestamp', limit: '10' })
@@ -20,6 +20,7 @@ async function backfillComments(token: string): Promise<PendingComment[]> {
           productName: m.caption ? m.caption.slice(0, 40) : 'Publicación',
           caption: m.caption ?? '',
           color: colorForId(m.id),
+          mediaUrl: m.thumbnail_url ?? m.media_url,
         },
       })
     }

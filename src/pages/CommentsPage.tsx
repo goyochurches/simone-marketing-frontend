@@ -89,7 +89,7 @@ export function CommentsPage() {
       <div className="flex flex-col gap-4">
         {pendingComments.map(c => (
           <div key={c.id} className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-4">
-            <PostThumbnail productName={c.post.productName} color={c.post.color} />
+            <PostThumbnail productName={c.post.productName} color={c.post.color} mediaUrl={c.post.mediaUrl} />
             <div className="min-w-0 flex-1">
               <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">{c.post.productName}</p>
               <p className="mb-3 line-clamp-2 text-xs italic text-slate-400">"{c.post.caption}"</p>
@@ -125,7 +125,17 @@ export function CommentsPage() {
   )
 }
 
-function PostThumbnail({ productName, color }: { productName: string; color: string }) {
+function PostThumbnail({ productName, color, mediaUrl }: { productName: string; color: string; mediaUrl?: string }) {
+  if (mediaUrl) {
+    return (
+      <img
+        src={mediaUrl}
+        alt={productName}
+        title={productName}
+        className="h-20 w-20 shrink-0 rounded-xl object-cover"
+      />
+    )
+  }
   return (
     <div
       className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-xl text-white"

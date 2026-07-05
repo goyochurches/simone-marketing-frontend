@@ -21,7 +21,9 @@ function isValidSignature(rawBody: Buffer, signatureHeader: string | string[] | 
 
 async function handleCommentChange(token: string, value: any) {
   const mediaId = value?.media?.id
-  const media = mediaId ? await igGet(`/${mediaId}`, token, { fields: 'caption' }).catch(() => null) : null
+  const media = mediaId
+    ? await igGet(`/${mediaId}`, token, { fields: 'caption,media_url,thumbnail_url' }).catch(() => null)
+    : null
   const caption = media?.caption ?? ''
   await upsertCachedComment({
     id: value.id,
@@ -33,6 +35,7 @@ async function handleCommentChange(token: string, value: any) {
       productName: caption ? caption.slice(0, 40) : 'Publicación',
       caption,
       color: colorForId(mediaId ?? value.id),
+      mediaUrl: media?.thumbnail_url ?? media?.media_url,
     },
   })
 }
