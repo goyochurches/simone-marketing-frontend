@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut, Unplug, Image } from 'lucide-react'
+import { AtSign, TrendingUp, UserCog, MessageCircle, Send, CircleDot, PlugZap, LogOut, Unplug, Image, BarChart3 } from 'lucide-react'
 import { LoginPage } from './pages/LoginPage'
 import { useInstagramStatus } from './hooks/useInstagramStatus'
 import { useAuthSession } from './hooks/useAuthSession'
@@ -9,8 +9,10 @@ const PersonalityPage = lazy(() => import('./pages/PersonalityPage').then(m => (
 const CommentsPage = lazy(() => import('./pages/CommentsPage').then(m => ({ default: m.CommentsPage })))
 const DmChatPage = lazy(() => import('./pages/DmChatPage').then(m => ({ default: m.DmChatPage })))
 const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage').then(m => ({ default: m.PhotoEditorPage })))
+const PerformancePage = lazy(() => import('./pages/PerformancePage').then(m => ({ default: m.PerformancePage })))
 
 const TABS = [
+  { id: 'performance', label: 'Rendimiento', icon: BarChart3 },
   { id: 'competition', label: 'Competencia', icon: TrendingUp },
   { id: 'personality', label: 'Personalidad', icon: UserCog },
   { id: 'comments', label: 'Comentarios', icon: MessageCircle },
@@ -29,7 +31,7 @@ function App() {
 }
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
-  const [tab, setTab] = useState<TabId>('competition')
+  const [tab, setTab] = useState<TabId>('performance')
   const { data: status, refetch: refetchStatus } = useInstagramStatus()
 
   async function handleLogout() {
@@ -84,6 +86,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <Suspense fallback={null}>
+          {tab === 'performance' && <PerformancePage />}
           {tab === 'competition' && <CompetitionPage />}
           {tab === 'personality' && <PersonalityPage />}
           {tab === 'comments' && <CommentsPage />}
