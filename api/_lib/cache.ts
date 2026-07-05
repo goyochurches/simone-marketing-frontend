@@ -1,6 +1,6 @@
 import { kv } from './kv.js'
 import type { PendingComment } from '../../src/comments'
-import type { PendingDm } from '../../src/dms'
+import type { PendingDm, DmMessage } from '../../src/dms'
 
 const COMMENTS_KEY = 'ig:cache:comments'
 const CONVERSATIONS_KEY = 'ig:cache:conversations'
@@ -35,6 +35,18 @@ export async function setCachedConversations(items: PendingDm[]): Promise<void> 
 export async function upsertCachedConversation(item: PendingDm): Promise<void> {
   const items = await getCachedConversations()
   await setCachedConversations([item, ...items.filter(i => i.id !== item.id)])
+}
+
+/** Appends a new message to a conversation's history instead of replacing it, so real-time webhook events don't wipe out prior context. */
+export async function appendConversationMessage(
+  preview: Omit<PendingDm, 'messages'>,
+  message: DmMessage,
+): Promise<void> {
+  const items = await getCachedConversations()
+  const existing = items.find(i => i.id === preview.id)
+  const messages = existing ? [...existing.messages, message] : [message]
+  const updated: PendingDm = { ...preview, messages }
+  await setCachedConversations([updated, ...items.filter(i => i.id !== preview.id)])
 }
 
 export async function removeCachedConversation(id: string): Promise<void> {

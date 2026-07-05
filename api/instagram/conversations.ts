@@ -2,20 +2,29 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getValidToken, igGet, describeMessage, NotConnectedError } from '../_lib/instagram.js'
 import { getCachedConversations, setCachedConversations, setRecipientId } from '../_lib/cache.js'
 import { requireAuth } from '../_lib/auth.js'
-import type { PendingDm } from '../../src/dms'
+import type { PendingDm, DmMessage } from '../../src/dms'
 
 async function backfillConversations(token: string, igUserId: string, igUsername: string): Promise<PendingDm[]> {
   const convos = await igGet(`/${igUserId}/conversations`, token, {
     platform: 'instagram',
-    fields: 'participants,messages.limit(1){message,from,created_time,attachments,shares,story,reactions}',
+    fields: 'participants,messages.limit(25){message,from,created_time,attachments,shares,story,reactions}',
   })
 
   const items: PendingDm[] = []
   for (const c of convos.data ?? []) {
-    const lastMsg = c.messages?.data?.[0]
+    const rawMessages = c.messages?.data ?? []
+    const lastMsg = rawMessages[0]
     // Participant/message "from" ids here use a different id scheme than /me returns for the same account, so match by username instead.
     const other = c.participants?.data?.find((p: any) => p.username !== igUsername)
     if (!lastMsg || !other || lastMsg.from?.username === igUsername) continue
+
+    // The API returns newest-first — reverse to chronological order for a chat thread.
+    const messages: DmMessage[] = [...rawMessages].reverse().map((m: any) => ({
+      id: m.id,
+      text: describeMessage(m),
+      fromMe: m.from?.username === igUsername,
+      timestamp: m.created_time,
+    }))
 
     await setRecipientId(other.id, other.id)
     items.push({
@@ -24,6 +33,7 @@ async function backfillConversations(token: string, igUserId: string, igUsername
       handle: `@${other.username ?? other.id}`,
       message: describeMessage(lastMsg),
       receivedAt: lastMsg.created_time,
+      messages,
     })
   }
   return items

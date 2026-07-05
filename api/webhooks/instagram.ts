@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import crypto from 'node:crypto'
 import { getValidToken, igGet, colorForId, describeMessage, NotConnectedError } from '../_lib/instagram.js'
-import { upsertCachedComment, upsertCachedConversation, setRecipientId } from '../_lib/cache.js'
+import { upsertCachedComment, appendConversationMessage, setRecipientId } from '../_lib/cache.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -48,15 +48,20 @@ async function handleMessagingEvent(token: string, event: any) {
 
   const profile = await igGet(`/${senderId}`, token, { fields: 'name,username' }).catch(() => null)
   const username = profile?.username ?? senderId
+  const receivedAt = new Date((event.timestamp ?? Date.now()) as number).toISOString()
+  const text = describeMessage(event.message)
 
   await setRecipientId(senderId, senderId)
-  await upsertCachedConversation({
-    id: senderId,
-    from: profile?.name ?? username,
-    handle: `@${username}`,
-    message: describeMessage(event.message),
-    receivedAt: new Date((event.timestamp ?? Date.now()) as number).toISOString(),
-  })
+  await appendConversationMessage(
+    {
+      id: senderId,
+      from: profile?.name ?? username,
+      handle: `@${username}`,
+      message: text,
+      receivedAt,
+    },
+    { id: event.message?.mid ?? `${senderId}-${receivedAt}`, text, fromMe: false, timestamp: receivedAt },
+  )
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

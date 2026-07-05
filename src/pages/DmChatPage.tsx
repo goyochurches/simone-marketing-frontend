@@ -199,10 +199,28 @@ function ChatThread({
 
       {/* Messages */}
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto bg-slate-50 p-4">
-        <div className="max-w-[75%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm">
-          {dm.message}
-          <p className="mt-1 text-[10px] text-slate-400">{new Date(dm.receivedAt).toLocaleString('es-ES')}</p>
-        </div>
+        {dm.messages.length > 0 ? (
+          dm.messages.map(m => (
+            <div
+              key={m.id}
+              className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ${
+                m.fromMe
+                  ? 'ml-auto rounded-br-sm bg-violet-600 text-white'
+                  : 'rounded-bl-sm bg-white text-slate-800'
+              }`}
+            >
+              {m.text}
+              <p className={`mt-1 text-[10px] ${m.fromMe ? 'text-violet-200' : 'text-slate-400'}`}>
+                {new Date(m.timestamp).toLocaleString('es-ES')}
+              </p>
+            </div>
+          ))
+        ) : (
+          <div className="max-w-[75%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm">
+            {dm.message}
+            <p className="mt-1 text-[10px] text-slate-400">{new Date(dm.receivedAt).toLocaleString('es-ES')}</p>
+          </div>
+        )}
 
         {draft?.status === 'error' && (
           <p className="max-w-[75%] rounded-2xl rounded-br-sm bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
