@@ -47,6 +47,7 @@ interface ToolbarProps {
   onExportAll: () => void
   pageCount: number
   onAddIcon: (iconId: string) => void
+  onOpenTemplates: () => void
 }
 
 export function Toolbar({
@@ -67,6 +68,7 @@ export function Toolbar({
   onExportAll,
   pageCount,
   onAddIcon,
+  onOpenTemplates,
 }: ToolbarProps) {
   const [elementsOpen, setElementsOpen] = useState(false)
   return (
@@ -127,6 +129,14 @@ export function Toolbar({
             }}
           />
         </label>
+
+        <button
+          onClick={onOpenTemplates}
+          className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:text-slate-800"
+        >
+          <LayoutTemplate className="h-3.5 w-3.5" />
+          Plantillas
+        </button>
 
         <div className="relative">
           <button

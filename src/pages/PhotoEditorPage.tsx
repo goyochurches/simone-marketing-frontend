@@ -4,11 +4,13 @@ import { addLayer, cropDocument, duplicateLayerInDoc, findLayer, moveLayer, remo
 import { DOCUMENT_PRESETS, createEmptyDocument, createIconLayer, createImageLayer } from '../lib/photo-editor/factory'
 import { addPage, createBlankPage, duplicatePage, removePage, reorderPage, resizeAllPages } from '../lib/photo-editor/pageOps'
 import { renderDocument } from '../lib/photo-editor/render'
+import { applyTemplate, type Template } from '../lib/photo-editor/templates'
 import type { EditorDocument, Layer, ToolId } from '../lib/photo-editor/types'
 import { CanvasStage } from './photo-editor/CanvasStage'
 import { LayersPanel } from './photo-editor/LayersPanel'
 import { PageStrip } from './photo-editor/PageStrip'
 import { PropertiesPanel } from './photo-editor/PropertiesPanel'
+import { TemplatesGallery } from './photo-editor/TemplatesGallery'
 import { Toolbar } from './photo-editor/Toolbar'
 
 interface Rect {
@@ -48,6 +50,7 @@ export function PhotoEditorPage() {
   const [brushColor, setBrushColor] = useState('#111827')
   const [brushSize, setBrushSize] = useState(10)
   const [cropRect, setCropRect] = useState<Rect | null>(null)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
 
   const editOriginRef = useRef<EditorDocument[] | null>(null)
 
@@ -101,6 +104,18 @@ export function PhotoEditorPage() {
       probe.src = src
     }
     reader.readAsDataURL(file)
+  }
+
+  function handleApplyTemplate(template: Template) {
+    if (doc.layers.length === 0) {
+      setDoc(prev => applyTemplate(prev, template))
+    } else {
+      const newPage = applyTemplate(createBlankPage(doc.width, doc.height), template)
+      const activeIndex = pages.findIndex(p => p.id === activePageId)
+      history.set(prev => addPage(prev, newPage, activeIndex + 1))
+      handleSelectPage(newPage.id)
+    }
+    setTemplatesOpen(false)
   }
 
   function handleAddIcon(iconId: string) {
@@ -263,6 +278,14 @@ export function PhotoEditorPage() {
         onExportAll={handleExportAll}
         pageCount={pages.length}
         onAddIcon={handleAddIcon}
+        onOpenTemplates={() => setTemplatesOpen(true)}
+      />
+
+      <TemplatesGallery
+        open={templatesOpen}
+        onClose={() => setTemplatesOpen(false)}
+        targetSize={{ width: doc.width, height: doc.height }}
+        onApply={handleApplyTemplate}
       />
 
       <PageStrip
