@@ -167,6 +167,10 @@ export function CanvasStage({
     return subscribeImageCache(draw)
   }, [doc.layers, draw])
 
+  useEffect(() => {
+    document.fonts.ready.then(draw)
+  }, [draw])
+
   function getDocPoint(e: { clientX: number; clientY: number }): Vec2 {
     const canvas = canvasRef.current!
     const rect = canvas.getBoundingClientRect()
