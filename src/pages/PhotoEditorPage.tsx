@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useHistoryState } from '../hooks/useHistoryState'
 import { addLayer, cropDocument, duplicateLayerInDoc, findLayer, moveLayer, removeLayer, updateLayer } from '../lib/photo-editor/docOps'
-import { DOCUMENT_PRESETS, createEmptyDocument, createImageLayer } from '../lib/photo-editor/factory'
+import { DOCUMENT_PRESETS, createEmptyDocument, createIconLayer, createImageLayer } from '../lib/photo-editor/factory'
 import { addPage, createBlankPage, duplicatePage, removePage, reorderPage, resizeAllPages } from '../lib/photo-editor/pageOps'
 import { renderDocument } from '../lib/photo-editor/render'
 import type { EditorDocument, Layer, ToolId } from '../lib/photo-editor/types'
@@ -101,6 +101,12 @@ export function PhotoEditorPage() {
       probe.src = src
     }
     reader.readAsDataURL(file)
+  }
+
+  function handleAddIcon(iconId: string) {
+    const layer = createIconLayer(iconId, doc)
+    setDoc(prev => addLayer(prev, layer))
+    setSelectedId(layer.id)
   }
 
   function handleExportCurrent() {
@@ -256,6 +262,7 @@ export function PhotoEditorPage() {
         onExportCurrent={handleExportCurrent}
         onExportAll={handleExportAll}
         pageCount={pages.length}
+        onAddIcon={handleAddIcon}
       />
 
       <PageStrip
