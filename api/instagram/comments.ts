@@ -1,8 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getValidToken, igGet, colorForId, NotConnectedError } from '../_lib/instagram.js'
-import { getCachedComments, setCachedComments } from '../_lib/cache.js'
+import { getCachedComments, getCachedCommentsAge, setCachedComments } from '../_lib/cache.js'
 import { requireAuth } from '../_lib/auth.js'
 import type { PendingComment } from '../../src/comments'
+
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000
 
 async function backfillComments(token: string, igUsername: string): Promise<PendingComment[]> {
   const media = await igGet('/me/media', token, { fields: 'id,caption,media_url,thumbnail_url', limit: '15' })
@@ -34,7 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const token = await getValidToken()
     let items = await getCachedComments()
-    if (items.length === 0) {
+    const age = await getCachedCommentsAge()
+    if (items.length === 0 || age === null || age > CACHE_TTL_MS) {
       items = await backfillComments(token.accessToken, token.igUsername)
       await setCachedComments(items)
     }

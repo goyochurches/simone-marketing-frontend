@@ -4,6 +4,7 @@ import type { PendingDm, DmMessage } from '../../src/dms'
 import type { PersonalityConfig } from '../../src/personality'
 
 const COMMENTS_KEY = 'ig:cache:comments'
+const COMMENTS_TS_KEY = 'ig:cache:comments:ts'
 const CONVERSATIONS_KEY = 'ig:cache:conversations'
 const RECIPIENTS_KEY = 'ig:cache:recipients'
 const PERSONALITY_KEY = 'ig:personality'
@@ -23,6 +24,13 @@ export async function getCachedComments(): Promise<PendingComment[]> {
 
 export async function setCachedComments(items: PendingComment[]): Promise<void> {
   await kv().set(COMMENTS_KEY, items)
+  await kv().set(COMMENTS_TS_KEY, Date.now())
+}
+
+/** Instagram's media `mediaUrl`s are signed and expire within ~24h, so a cache older than this must be refetched even if non-empty. */
+export async function getCachedCommentsAge(): Promise<number | null> {
+  const ts = await kv().get<number>(COMMENTS_TS_KEY)
+  return typeof ts === 'number' ? Date.now() - ts : null
 }
 
 export async function upsertCachedComment(item: PendingComment): Promise<void> {
