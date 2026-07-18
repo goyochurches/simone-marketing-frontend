@@ -1,4 +1,4 @@
-export type LayerType = 'image' | 'text' | 'shape' | 'drawing'
+export type LayerType = 'image' | 'text' | 'shape' | 'drawing' | 'icon'
 export type ShapeKind = 'rect' | 'ellipse' | 'line' | 'triangle'
 export type ToolId = 'select' | 'text' | 'rect' | 'ellipse' | 'line' | 'triangle' | 'brush' | 'crop'
 export type HandleId = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'rotate'
@@ -101,7 +101,17 @@ export interface DrawingLayer extends BaseLayer {
   baseHeight: number
 }
 
-export type Layer = ImageLayer | TextLayer | ShapeLayer | DrawingLayer
+export interface IconLayer extends BaseLayer {
+  type: 'icon'
+  iconId: string
+  fill: string
+  stroke: string
+  strokeWidth: number
+  fillEnabled: boolean
+  strokeEnabled: boolean
+}
+
+export type Layer = ImageLayer | TextLayer | ShapeLayer | DrawingLayer | IconLayer
 
 export interface EditorDocument {
   id: string

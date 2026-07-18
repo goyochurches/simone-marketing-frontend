@@ -285,6 +285,44 @@ export function PropertiesPanel({ layer, updateLive, updateNow, beginEdit, endEd
         </>
       )}
 
+      {layer.type === 'icon' && (
+        <>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={layer.fillEnabled}
+              onChange={e => updateNow(l => (l.type === 'icon' ? { ...l, fillEnabled: e.target.checked } : l))}
+            />
+            <span className="text-xs text-slate-600">Relleno</span>
+            <input
+              type="color"
+              value={layer.fill}
+              onPointerDown={beginEdit}
+              onChange={e => updateLive(l => (l.type === 'icon' ? { ...l, fill: e.target.value } : l))}
+              onBlur={endEdit}
+              className="ml-auto h-8 w-10 cursor-pointer rounded border border-slate-200"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={layer.strokeEnabled}
+              onChange={e => updateNow(l => (l.type === 'icon' ? { ...l, strokeEnabled: e.target.checked } : l))}
+            />
+            <span className="text-xs text-slate-600">Borde</span>
+            <input
+              type="color"
+              value={layer.stroke}
+              onPointerDown={beginEdit}
+              onChange={e => updateLive(l => (l.type === 'icon' ? { ...l, stroke: e.target.value } : l))}
+              onBlur={endEdit}
+              className="ml-auto h-8 w-10 cursor-pointer rounded border border-slate-200"
+            />
+          </div>
+          <SliderField label="Grosor de borde" value={layer.strokeWidth} min={0} max={40} onInput={v => updateLive(l => (l.type === 'icon' ? { ...l, strokeWidth: v } : l))} onBegin={beginEdit} onEnd={endEdit} suffix="px" />
+        </>
+      )}
+
       {layer.type === 'drawing' && (
         <label className="flex items-center gap-2">
           <span className="text-xs text-slate-600">Color del trazo</span>

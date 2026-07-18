@@ -4,6 +4,7 @@ import {
   DEFAULT_TEXT_STROKE,
   type DrawingLayer,
   type EditorDocument,
+  type IconLayer,
   type ImageLayer,
   type Layer,
   type ShapeKind,
@@ -134,6 +135,28 @@ function shapeName(shape: ShapeKind): string {
       return 'Triángulo'
     case 'line':
       return 'Línea'
+  }
+}
+
+export function createIconLayer(iconId: string, doc: EditorDocument): IconLayer {
+  return {
+    id: id(),
+    type: 'icon',
+    name: 'Elemento',
+    x: doc.width / 2,
+    y: doc.height / 2,
+    width: 160,
+    height: 160,
+    rotation: 0,
+    opacity: 1,
+    visible: true,
+    locked: false,
+    iconId,
+    fill: '#7c3aed',
+    stroke: '#5b21b6',
+    strokeWidth: 0,
+    fillEnabled: true,
+    strokeEnabled: false,
   }
 }
 

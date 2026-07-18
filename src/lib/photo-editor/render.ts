@@ -1,6 +1,7 @@
+import { ELEMENT_VIEWBOX, getElement } from './elements'
 import { getCachedImage } from './imageCache'
 import { getHandlePositions } from './geometry'
-import type { DrawingLayer, EditorDocument, ImageFilters, ImageLayer, Layer, ShapeLayer, TextLayer } from './types'
+import type { DrawingLayer, EditorDocument, IconLayer, ImageFilters, ImageLayer, Layer, ShapeLayer, TextLayer } from './types'
 
 export function filterString(f: ImageFilters): string {
   return `brightness(${f.brightness}%) contrast(${f.contrast}%) saturate(${f.saturate}%) grayscale(${f.grayscale}%) sepia(${f.sepia}%) blur(${f.blur}px) hue-rotate(${f.hueRotate}deg) invert(${f.invert}%)`
@@ -38,7 +39,30 @@ function drawLayerContent(ctx: CanvasRenderingContext2D, layer: Layer): void {
     case 'drawing':
       drawDrawingLayer(ctx, layer)
       return
+    case 'icon':
+      drawIconLayer(ctx, layer)
+      return
   }
+}
+
+function drawIconLayer(ctx: CanvasRenderingContext2D, layer: IconLayer): void {
+  const el = getElement(layer.iconId)
+  if (!el) return
+  const path = new Path2D(el.path)
+  ctx.save()
+  ctx.translate(-layer.width / 2, -layer.height / 2)
+  ctx.scale(layer.width / ELEMENT_VIEWBOX, layer.height / ELEMENT_VIEWBOX)
+  if (layer.fillEnabled) {
+    ctx.fillStyle = layer.fill
+    ctx.fill(path)
+  }
+  if (layer.strokeEnabled && layer.strokeWidth > 0) {
+    ctx.strokeStyle = layer.stroke
+    ctx.lineWidth = (layer.strokeWidth * ELEMENT_VIEWBOX) / Math.max(layer.width, layer.height)
+    ctx.lineJoin = 'round'
+    ctx.stroke(path)
+  }
+  ctx.restore()
 }
 
 function drawImageLayer(ctx: CanvasRenderingContext2D, layer: ImageLayer): void {

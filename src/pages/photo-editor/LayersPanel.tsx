@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Copy, Eye, EyeOff, Image as ImageIcon, Lock, Paintbrush, Shapes, Trash2, Type, Unlock } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, Eye, EyeOff, Image as ImageIcon, Lock, Paintbrush, Shapes, Sparkles, Trash2, Type, Unlock } from 'lucide-react'
 import { useState } from 'react'
 import type { Layer } from '../../lib/photo-editor/types'
 
@@ -24,6 +24,8 @@ function layerIcon(layer: Layer) {
       return Shapes
     case 'drawing':
       return Paintbrush
+    case 'icon':
+      return Sparkles
   }
 }
 

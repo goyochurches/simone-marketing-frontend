@@ -6,13 +6,16 @@ import {
   MousePointer2,
   Paintbrush,
   Redo2,
+  Sparkles,
   Square,
   Triangle,
   Type,
   Undo2,
   Upload,
 } from 'lucide-react'
+import { useState } from 'react'
 import type { ToolId } from '../../lib/photo-editor/types'
+import { ElementsPanel } from './ElementsPanel'
 
 const TOOLS: { id: ToolId; label: string; icon: typeof MousePointer2 }[] = [
   { id: 'select', label: 'Seleccionar', icon: MousePointer2 },
@@ -42,6 +45,7 @@ interface ToolbarProps {
   onExportCurrent: () => void
   onExportAll: () => void
   pageCount: number
+  onAddIcon: (iconId: string) => void
 }
 
 export function Toolbar({
@@ -61,7 +65,9 @@ export function Toolbar({
   onExportCurrent,
   onExportAll,
   pageCount,
+  onAddIcon,
 }: ToolbarProps) {
+  const [elementsOpen, setElementsOpen] = useState(false)
   return (
     <div className="mb-4 flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
