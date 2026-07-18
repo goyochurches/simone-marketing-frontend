@@ -63,12 +63,28 @@ function drawTextLayer(ctx: CanvasRenderingContext2D, layer: TextLayer): void {
   ctx.fillStyle = layer.color
   ctx.textAlign = layer.align
   ctx.textBaseline = 'middle'
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${layer.letterSpacing}px`
+  if (layer.shadow.enabled) {
+    ctx.shadowColor = layer.shadow.color
+    ctx.shadowBlur = layer.shadow.blur
+    ctx.shadowOffsetX = layer.shadow.offsetX
+    ctx.shadowOffsetY = layer.shadow.offsetY
+  }
   const lines = layer.text.length > 0 ? layer.text.split('\n') : ['']
   const lineHeight = layer.fontSize * 1.25
   const totalHeight = lineHeight * lines.length
   const startY = -totalHeight / 2 + lineHeight / 2
   const xPos = layer.align === 'left' ? -layer.width / 2 : layer.align === 'right' ? layer.width / 2 : 0
-  lines.forEach((line, i) => ctx.fillText(line, xPos, startY + i * lineHeight))
+  lines.forEach((line, i) => {
+    const y = startY + i * lineHeight
+    if (layer.textStroke.enabled) {
+      ctx.lineWidth = layer.textStroke.width
+      ctx.strokeStyle = layer.textStroke.color
+      ctx.lineJoin = 'round'
+      ctx.strokeText(line, xPos, y)
+    }
+    ctx.fillText(line, xPos, y)
+  })
 }
 
 function drawShapeLayer(ctx: CanvasRenderingContext2D, layer: ShapeLayer): void {

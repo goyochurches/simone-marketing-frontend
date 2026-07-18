@@ -47,6 +47,23 @@ export interface ImageLayer extends BaseLayer {
   filters: ImageFilters
 }
 
+export interface TextShadow {
+  enabled: boolean
+  color: string
+  blur: number
+  offsetX: number
+  offsetY: number
+}
+
+export interface TextStroke {
+  enabled: boolean
+  color: string
+  width: number
+}
+
+export const DEFAULT_TEXT_SHADOW: TextShadow = { enabled: false, color: '#000000', blur: 8, offsetX: 2, offsetY: 2 }
+export const DEFAULT_TEXT_STROKE: TextStroke = { enabled: false, color: '#ffffff', width: 4 }
+
 export interface TextLayer extends BaseLayer {
   type: 'text'
   text: string
@@ -56,6 +73,9 @@ export interface TextLayer extends BaseLayer {
   fontStyle: 'normal' | 'italic'
   color: string
   align: 'left' | 'center' | 'right'
+  letterSpacing: number
+  shadow: TextShadow
+  textStroke: TextStroke
 }
 
 export interface ShapeLayer extends BaseLayer {
@@ -84,6 +104,7 @@ export interface DrawingLayer extends BaseLayer {
 export type Layer = ImageLayer | TextLayer | ShapeLayer | DrawingLayer
 
 export interface EditorDocument {
+  id: string
   width: number
   height: number
   background: string

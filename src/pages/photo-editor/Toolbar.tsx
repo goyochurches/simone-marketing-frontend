@@ -39,7 +39,9 @@ interface ToolbarProps {
   onUploadImage: (file: File) => void
   onApplyCrop: () => void
   onCancelCrop: () => void
-  onExport: () => void
+  onExportCurrent: () => void
+  onExportAll: () => void
+  pageCount: number
 }
 
 export function Toolbar({
@@ -56,7 +58,9 @@ export function Toolbar({
   onUploadImage,
   onApplyCrop,
   onCancelCrop,
-  onExport,
+  onExportCurrent,
+  onExportAll,
+  pageCount,
 }: ToolbarProps) {
   return (
     <div className="mb-4 flex flex-col gap-2">
@@ -117,13 +121,32 @@ export function Toolbar({
           />
         </label>
 
-        <button
-          onClick={onExport}
-          className="ml-auto flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Descargar PNG
-        </button>
+        {pageCount > 1 ? (
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={onExportCurrent}
+              className="flex items-center gap-1.5 rounded-full border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Descargar actual
+            </button>
+            <button
+              onClick={onExportAll}
+              className="flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Descargar todas
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onExportCurrent}
+            className="ml-auto flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Descargar PNG
+          </button>
+        )}
       </div>
 
       {tool === 'brush' && (

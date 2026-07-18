@@ -1,4 +1,5 @@
 import { AlignCenter, AlignLeft, AlignRight, Bold, FlipHorizontal, FlipVertical, Italic } from 'lucide-react'
+import { FONT_OPTIONS, TEXT_STYLE_PRESETS } from '../../lib/photo-editor/fonts'
 import { DEFAULT_FILTERS, type ImageFilters, type Layer } from '../../lib/photo-editor/types'
 
 interface PropertiesPanelProps {
@@ -9,13 +10,6 @@ interface PropertiesPanelProps {
   endEdit: () => void
   onDelete: () => void
 }
-
-const FONT_OPTIONS = [
-  { label: 'Inter (sans)', value: 'Inter, system-ui, sans-serif' },
-  { label: 'Georgia (serif)', value: 'Georgia, "Times New Roman", serif' },
-  { label: 'Courier (mono)', value: '"Courier New", monospace' },
-  { label: 'Impact', value: 'Impact, "Arial Black", sans-serif' },
-]
 
 const FILTER_PRESETS: { label: string; filters: ImageFilters }[] = [
   { label: 'Normal', filters: { ...DEFAULT_FILTERS } },
@@ -124,6 +118,34 @@ export function PropertiesPanel({ layer, updateLive, updateNow, beginEdit, endEd
             />
           </label>
 
+          <div>
+            <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Estilos de texto</div>
+            <div className="flex flex-wrap gap-1.5">
+              {TEXT_STYLE_PRESETS.map(preset => (
+                <button
+                  key={preset.label}
+                  onClick={() =>
+                    updateNow(l =>
+                      l.type === 'text'
+                        ? {
+                            ...l,
+                            fontFamily: preset.fontFamily,
+                            fontSize: preset.fontSize,
+                            fontWeight: preset.fontWeight,
+                            fontStyle: preset.fontStyle,
+                            letterSpacing: preset.letterSpacing,
+                          }
+                        : l,
+                    )
+                  }
+                  className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Fuente</span>
             <select
@@ -140,6 +162,7 @@ export function PropertiesPanel({ layer, updateLive, updateNow, beginEdit, endEd
           </label>
 
           <SliderField label="Tamaño" value={layer.fontSize} min={8} max={200} onInput={v => updateLive(l => (l.type === 'text' ? { ...l, fontSize: v } : l))} onBegin={beginEdit} onEnd={endEdit} suffix="px" />
+          <SliderField label="Espaciado" value={layer.letterSpacing} min={-5} max={30} onInput={v => updateLive(l => (l.type === 'text' ? { ...l, letterSpacing: v } : l))} onBegin={beginEdit} onEnd={endEdit} suffix="px" />
 
           <div className="flex items-center gap-2">
             <button
@@ -176,6 +199,50 @@ export function PropertiesPanel({ layer, updateLive, updateNow, beginEdit, endEd
               className="ml-auto h-8 w-10 cursor-pointer rounded border border-slate-200"
             />
           </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={layer.shadow.enabled}
+              onChange={e => updateNow(l => (l.type === 'text' ? { ...l, shadow: { ...l.shadow, enabled: e.target.checked } } : l))}
+            />
+            <span className="text-xs text-slate-600">Sombra</span>
+            <input
+              type="color"
+              value={layer.shadow.color}
+              onPointerDown={beginEdit}
+              onChange={e => updateLive(l => (l.type === 'text' ? { ...l, shadow: { ...l.shadow, color: e.target.value } } : l))}
+              onBlur={endEdit}
+              className="ml-auto h-8 w-10 cursor-pointer rounded border border-slate-200"
+            />
+          </div>
+          {layer.shadow.enabled && (
+            <>
+              <SliderField label="Difuminado de sombra" value={layer.shadow.blur} min={0} max={40} onInput={v => updateLive(l => (l.type === 'text' ? { ...l, shadow: { ...l.shadow, blur: v } } : l))} onBegin={beginEdit} onEnd={endEdit} suffix="px" />
+              <SliderField label="Desplazamiento X" value={layer.shadow.offsetX} min={-30} max={30} onInput={v => updateLive(l => (l.type === 'text' ? { ...l, shadow: { ...l.shadow, offsetX: v } } : l))} onBegin={beginEdit} onEnd={endEdit} suffix="px" />
+              <SliderField label="Desplazamiento Y" value={layer.shadow.offsetY} min={-30} max={30} onInput={v => updateLive(l => (l.type === 'text' ? { ...l, shadow: { ...l.shadow, offsetY: v } } : l))} onBegin={beginEdit} onEnd={endEdit} suffix="px" />
+            </>
+          )}
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={layer.textStroke.enabled}
+              onChange={e => updateNow(l => (l.type === 'text' ? { ...l, textStroke: { ...l.textStroke, enabled: e.target.checked } } : l))}
+            />
+            <span className="text-xs text-slate-600">Contorno</span>
+            <input
+              type="color"
+              value={layer.textStroke.color}
+              onPointerDown={beginEdit}
+              onChange={e => updateLive(l => (l.type === 'text' ? { ...l, textStroke: { ...l.textStroke, color: e.target.value } } : l))}
+              onBlur={endEdit}
+              className="ml-auto h-8 w-10 cursor-pointer rounded border border-slate-200"
+            />
+          </div>
+          {layer.textStroke.enabled && (
+            <SliderField label="Grosor de contorno" value={layer.textStroke.width} min={1} max={20} onInput={v => updateLive(l => (l.type === 'text' ? { ...l, textStroke: { ...l.textStroke, width: v } } : l))} onBegin={beginEdit} onEnd={endEdit} suffix="px" />
+          )}
         </>
       )}
 

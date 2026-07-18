@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useHistoryState } from '../hooks/useHistoryState'
 import { addLayer, cropDocument, duplicateLayerInDoc, findLayer, moveLayer, removeLayer, updateLayer } from '../lib/photo-editor/docOps'
 import { DOCUMENT_PRESETS, createEmptyDocument, createImageLayer } from '../lib/photo-editor/factory'
+import { addPage, createBlankPage, duplicatePage, removePage, reorderPage, resizeAllPages } from '../lib/photo-editor/pageOps'
 import { renderDocument } from '../lib/photo-editor/render'
 import type { EditorDocument, Layer, ToolId } from '../lib/photo-editor/types'
 import { CanvasStage } from './photo-editor/CanvasStage'
 import { LayersPanel } from './photo-editor/LayersPanel'
+import { PageStrip } from './photo-editor/PageStrip'
 import { PropertiesPanel } from './photo-editor/PropertiesPanel'
 import { Toolbar } from './photo-editor/Toolbar'
 
@@ -21,9 +23,25 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
 }
 
+function exportPageToPng(doc: EditorDocument, filename: string) {
+  const canvas = window.document.createElement('canvas')
+  canvas.width = doc.width
+  canvas.height = doc.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  renderDocument(ctx, doc)
+  const url = canvas.toDataURL('image/png')
+  const link = window.document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+}
+
 export function PhotoEditorPage() {
-  const history = useHistoryState<EditorDocument>(createEmptyDocument())
-  const doc = history.state
+  const history = useHistoryState<EditorDocument[]>([createEmptyDocument()])
+  const pages = history.state
+  const [activePageId, setActivePageId] = useState(pages[0].id)
+  const doc = pages.find(p => p.id === activePageId) ?? pages[0]
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tool, setTool] = useState<ToolId>('select')
@@ -31,15 +49,23 @@ export function PhotoEditorPage() {
   const [brushSize, setBrushSize] = useState(10)
   const [cropRect, setCropRect] = useState<Rect | null>(null)
 
-  const editOriginRef = useRef<EditorDocument | null>(null)
+  const editOriginRef = useRef<EditorDocument[] | null>(null)
 
   const selectedLayer: Layer | null = selectedId ? findLayer(doc, selectedId) ?? null : null
 
+  useEffect(() => {
+    if (!pages.some(p => p.id === activePageId)) {
+      setActivePageId(pages[0].id)
+      setSelectedId(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pages])
+
   const setDoc = useCallback(
     (updater: EditorDocument | ((prev: EditorDocument) => EditorDocument), options?: { commit?: boolean }) => {
-      history.set(updater, options)
+      history.set(prevPages => prevPages.map(p => (p.id === activePageId ? (typeof updater === 'function' ? updater(p) : updater) : p)), options)
     },
-    [history],
+    [history, activePageId],
   )
 
   function selectTool(next: ToolId) {
@@ -77,18 +103,52 @@ export function PhotoEditorPage() {
     reader.readAsDataURL(file)
   }
 
-  function handleExport() {
-    const canvas = window.document.createElement('canvas')
-    canvas.width = doc.width
-    canvas.height = doc.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    renderDocument(ctx, doc)
-    const url = canvas.toDataURL('image/png')
-    const link = window.document.createElement('a')
-    link.href = url
-    link.download = 'diseno-simone.png'
-    link.click()
+  function handleExportCurrent() {
+    exportPageToPng(doc, 'diseno-simone.png')
+  }
+
+  function handleExportAll() {
+    pages.forEach((p, i) => {
+      window.setTimeout(() => exportPageToPng(p, `diseno-simone-${i + 1}.png`), i * 150)
+    })
+  }
+
+  function handleResizeCanvas(width: number, height: number) {
+    history.set(prev => resizeAllPages(prev, width, height))
+  }
+
+  function handleSelectPage(id: string) {
+    if (tool === 'crop') handleCancelCrop()
+    setActivePageId(id)
+    setSelectedId(null)
+  }
+
+  function handleAddPage() {
+    const activeIndex = pages.findIndex(p => p.id === activePageId)
+    const newPage = createBlankPage(doc.width, doc.height)
+    history.set(prev => addPage(prev, newPage, activeIndex + 1))
+    handleSelectPage(newPage.id)
+  }
+
+  function handleDuplicatePage(id: string) {
+    const result = duplicatePage(pages, id)
+    history.set(result.pages)
+    if (result.newId) handleSelectPage(result.newId)
+  }
+
+  function handleDeletePage(id: string) {
+    if (pages.length <= 1) return
+    const deletedIndex = pages.findIndex(p => p.id === id)
+    const next = removePage(pages, id)
+    history.set(next)
+    if (id === activePageId) {
+      const fallback = next[Math.min(deletedIndex, next.length - 1)]
+      handleSelectPage(fallback.id)
+    }
+  }
+
+  function handleMovePage(id: string, direction: 'left' | 'right') {
+    history.set(prev => reorderPage(prev, id, direction))
   }
 
   const updateLive = useCallback(
@@ -108,8 +168,8 @@ export function PhotoEditorPage() {
   )
 
   const beginEdit = useCallback(() => {
-    editOriginRef.current = doc
-  }, [doc])
+    editOriginRef.current = pages
+  }, [pages])
 
   const endEdit = useCallback(() => {
     if (editOriginRef.current) {
@@ -117,6 +177,13 @@ export function PhotoEditorPage() {
       editOriginRef.current = null
     }
   }, [history])
+
+  const commitPageDrag = useCallback(
+    (origin: EditorDocument) => {
+      history.commitDrag(pages.map(p => (p.id === activePageId ? origin : p)))
+    },
+    [history, pages, activePageId],
+  )
 
   function deleteLayer(id: string) {
     setDoc(prev => removeLayer(prev, id))
@@ -159,7 +226,7 @@ export function PhotoEditorPage() {
             value={`${doc.width}x${doc.height}`}
             onChange={e => {
               const preset = DOCUMENT_PRESETS.find(p => `${p.width}x${p.height}` === e.target.value)
-              if (preset) setDoc(prev => ({ ...prev, width: preset.width, height: preset.height }))
+              if (preset) handleResizeCanvas(preset.width, preset.height)
             }}
             className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-700"
           >
@@ -186,14 +253,26 @@ export function PhotoEditorPage() {
         onUploadImage={handleUploadImage}
         onApplyCrop={handleApplyCrop}
         onCancelCrop={handleCancelCrop}
-        onExport={handleExport}
+        onExportCurrent={handleExportCurrent}
+        onExportAll={handleExportAll}
+        pageCount={pages.length}
+      />
+
+      <PageStrip
+        pages={pages}
+        activePageId={activePageId}
+        onSelectPage={handleSelectPage}
+        onAddPage={handleAddPage}
+        onDuplicatePage={handleDuplicatePage}
+        onDeletePage={handleDeletePage}
+        onMovePage={handleMovePage}
       />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_280px_280px]">
         <CanvasStage
           doc={doc}
           setDoc={setDoc}
-          commitDrag={history.commitDrag}
+          commitDrag={commitPageDrag}
           selectedId={selectedId}
           onSelect={setSelectedId}
           tool={tool}

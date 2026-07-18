@@ -1,4 +1,15 @@
-import { DEFAULT_FILTERS, type DrawingLayer, type EditorDocument, type ImageLayer, type Layer, type ShapeKind, type ShapeLayer, type TextLayer } from './types'
+import {
+  DEFAULT_FILTERS,
+  DEFAULT_TEXT_SHADOW,
+  DEFAULT_TEXT_STROKE,
+  type DrawingLayer,
+  type EditorDocument,
+  type ImageLayer,
+  type Layer,
+  type ShapeKind,
+  type ShapeLayer,
+  type TextLayer,
+} from './types'
 
 export interface DocumentPreset {
   id: string
@@ -19,7 +30,7 @@ function id(): string {
 }
 
 export function createEmptyDocument(width = 1080, height = 1080): EditorDocument {
-  return { width, height, background: '#ffffff', layers: [] }
+  return { id: id(), width, height, background: '#ffffff', layers: [] }
 }
 
 export function createImageLayer(src: string, doc: EditorDocument, natural?: { width: number; height: number }): ImageLayer {
@@ -75,6 +86,9 @@ export function createTextLayer(doc: EditorDocument): TextLayer {
     fontStyle: 'normal',
     color: '#111827',
     align: 'center',
+    letterSpacing: 0,
+    shadow: { ...DEFAULT_TEXT_SHADOW },
+    textStroke: { ...DEFAULT_TEXT_STROKE },
   }
 }
 
